@@ -3,6 +3,7 @@ package com.photo.searchai.worker
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.ServiceInfo
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
@@ -148,7 +149,17 @@ class OcrIndexingWorker @AssistedInject constructor(
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
         
-        return ForegroundInfo(NOTIFICATION_ID, notification)
+        // Android 10+ (API 29+) requires foreground service type
+        // Android 14+ (API 34+, targetSDK 35) strictly enforces this
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ForegroundInfo(
+                NOTIFICATION_ID, 
+                notification, 
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            )
+        } else {
+            ForegroundInfo(NOTIFICATION_ID, notification)
+        }
     }
     
     private fun createNotificationChannel() {
