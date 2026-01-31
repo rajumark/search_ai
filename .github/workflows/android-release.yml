@@ -1,353 +1,100 @@
-# ============================================================================
-# PhotoSearchAI - Android Release CI/CD Pipeline
-# ============================================================================
-# 
-# TRIGGER: Runs only when commit message contains "#go"
-# BUILD: Creates a signed, minified, universal APK
-# VERSION: Auto-generated using datetime (YYYYMMDDHHMM)
-# SIGNING: Uses secrets from GitHub repository settings
-#
-# Required Secrets:
-#   - KEYSTORE_BASE64: Base64-encoded keystore file
-#   - KEYSTORE_PASSWORD: Password for the keystore
-#   - KEY_ALIAS: Alias of the signing key
-#   - KEY_PASSWORD: Password for the key
-#
-# Optional Secrets:
-#   - GITHUB_TOKEN: Auto-provided by GitHub for releases
-#
-# ============================================================================
+# PhotoSearchAI - Simple Android Release Pipeline
+# Trigger: Runs when commit message contains "#go"
+# Output: Signed APK uploaded to GitHub Releases
 
 name: Android Release Build
 
-# ============================================================================
-# TRIGGER CONFIGURATION
-# Only runs when commit message contains "#go"
-# Branch-agnostic: works on any branch
-# ============================================================================
 on:
   push:
     branches:
-      - '**'  # All branches
+      - '**'
 
-# Cancel in-progress runs for the same branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# ============================================================================
-# ENVIRONMENT VARIABLES
-# Shared across all jobs
-# ============================================================================
 env:
   JAVA_VERSION: '17'
   JAVA_DISTRIBUTION: 'temurin'
-  GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true'
 
 jobs:
-  # ==========================================================================
-  # CHECK IF BUILD SHOULD RUN
-  # Validates that commit message contains "#go"
-  # ==========================================================================
-  check-trigger:
-    name: 🔍 Check Trigger
+  build-and-release:
+    name: 🚀 Build & Release APK
     runs-on: ubuntu-latest
-    outputs:
-      should_build: ${{ steps.check.outputs.should_build }}
-      version_code: ${{ steps.version.outputs.version_code }}
-      version_name: ${{ steps.version.outputs.version_name }}
-    
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      
-      - name: 🔍 Check Commit Message for #go
-        id: check
-        run: |
-          echo "📋 Commit message: ${{ github.event.head_commit.message }}"
-          if echo "${{ github.event.head_commit.message }}" | grep -q "#go"; then
-            echo "✅ Found #go trigger in commit message"
-            echo "should_build=true" >> $GITHUB_OUTPUT
-          else
-            echo "⏭️ No #go trigger found - skipping build"
-            echo "should_build=false" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: 📅 Generate Version
-        id: version
-        if: steps.check.outputs.should_build == 'true'
-        run: |
-          # Generate version code: YYMMDDHHMM (fits in Int32)
-          VERSION_CODE=$(date -u +'%y%m%d%H%M')
-          # Generate version name: YYYY.MM.DD-HHMM
-          VERSION_NAME=$(date -u +'%Y.%m.%d-%H%M')
-          
-          echo "📦 Version Code: $VERSION_CODE"
-          echo "📦 Version Name: $VERSION_NAME"
-          
-          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
-          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
-
-  # ==========================================================================
-  # LINT CHECK
-  # Runs Android lint to catch issues before building
-  # ==========================================================================
-  lint:
-    name: 🔎 Lint Check
-    runs-on: ubuntu-latest
-    needs: check-trigger
-    if: needs.check-trigger.outputs.should_build == 'true'
-    
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-      
-      - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-      
-      - name: 🐘 Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false
-      
-      - name: 🔎 Run Lint
-        run: |
-          echo "🔍 Running Android Lint..."
-          ./gradlew lint --stacktrace
-      
-      - name: 📊 Upload Lint Report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: lint-report
-          path: |
-            app/build/reports/lint-results*.html
-            app/build/reports/lint-results*.xml
-          retention-days: 7
-
-  # ==========================================================================
-  # UNIT TESTS
-  # Runs unit tests to ensure code quality
-  # ==========================================================================
-  test:
-    name: 🧪 Unit Tests
-    runs-on: ubuntu-latest
-    needs: check-trigger
-    if: needs.check-trigger.outputs.should_build == 'true'
-    
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-      
-      - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-      
-      - name: 🐘 Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false
-      
-      - name: 🧪 Run Unit Tests
-        run: |
-          echo "🧪 Running unit tests..."
-          ./gradlew test --stacktrace
-      
-      - name: 📊 Upload Test Report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-report
-          path: app/build/reports/tests/
-          retention-days: 7
-
-  # ==========================================================================
-  # BUILD RELEASE APK
-  # Creates a signed, minified, universal APK
-  # ==========================================================================
-  build:
-    name: 🏗️ Build Release APK
-    runs-on: ubuntu-latest
-    needs: [check-trigger, lint, test]
-    if: needs.check-trigger.outputs.should_build == 'true'
-    
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-      
-      - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-      
-      - name: 🐘 Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false
-      
-      # ======================================================================
-      # SIGNING SETUP
-      # Decodes keystore from base64 secret and sets up signing environment
-      # ======================================================================
-      - name: 🔐 Decode Keystore
-        id: decode_keystore
-        run: |
-          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-            echo "🔑 Decoding keystore from secrets..."
-            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/release.keystore
-            echo "keystore_path=${{ github.workspace }}/release.keystore" >> $GITHUB_OUTPUT
-            echo "signing_available=true" >> $GITHUB_OUTPUT
-          else
-            echo "⚠️ No keystore secret found - APK will be unsigned"
-            echo "signing_available=false" >> $GITHUB_OUTPUT
-          fi
-      
-      # ======================================================================
-      # BUILD APK
-      # Assembles release APK with R8 minification enabled
-      # ======================================================================
-      - name: 🏗️ Build Release APK
-        env:
-          # Version info from check-trigger job
-          CI_VERSION_CODE: ${{ needs.check-trigger.outputs.version_code }}
-          CI_VERSION_NAME: ${{ needs.check-trigger.outputs.version_name }}
-          # Signing credentials (only if available)
-          KEYSTORE_FILE_PATH: ${{ steps.decode_keystore.outputs.signing_available == 'true' && format('{0}/release.keystore', github.workspace) || '' }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          echo "🏗️ Building Release APK..."
-          echo "📦 Version Code: $CI_VERSION_CODE"
-          echo "📦 Version Name: $CI_VERSION_NAME"
-          echo "🔐 Signing Available: ${{ steps.decode_keystore.outputs.signing_available }}"
-          
-          ./gradlew assembleRelease --stacktrace
-          
-          echo "✅ Build complete!"
-      
-      - name: 🧹 Clean up Keystore
-        if: always()
-        run: |
-          if [ -f "${{ github.workspace }}/release.keystore" ]; then
-            rm -f "${{ github.workspace }}/release.keystore"
-            echo "🧹 Keystore cleaned up"
-          fi
-      
-      # ======================================================================
-      # RENAME APK
-      # Adds version info to APK filename for clarity
-      # ======================================================================
-      - name: 📦 Rename APK
-        id: rename_apk
-        run: |
-          VERSION_NAME="${{ needs.check-trigger.outputs.version_name }}"
-          
-          # Find the APK
-          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
-          
-          if [ -z "$APK_PATH" ]; then
-            echo "❌ No APK found!"
-            exit 1
-          fi
-          
-          # Create new filename
-          NEW_APK_NAME="PhotoSearchAI-${VERSION_NAME}.apk"
-          NEW_APK_PATH="app/build/outputs/apk/release/${NEW_APK_NAME}"
-          
-          mv "$APK_PATH" "$NEW_APK_PATH"
-          
-          echo "📦 APK renamed to: $NEW_APK_NAME"
-          echo "apk_path=$NEW_APK_PATH" >> $GITHUB_OUTPUT
-          echo "apk_name=$NEW_APK_NAME" >> $GITHUB_OUTPUT
-      
-      # ======================================================================
-      # UPLOAD ARTIFACT
-      # Makes APK available for download from GitHub Actions
-      # ======================================================================
-      - name: 📤 Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apk
-          path: ${{ steps.rename_apk.outputs.apk_path }}
-          retention-days: 30
-          if-no-files-found: error
-      
-      - name: 📊 Build Summary
-        run: |
-          echo "## 🎉 Build Successful!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 📦 APK Name | \`${{ steps.rename_apk.outputs.apk_name }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔢 Version Code | \`${{ needs.check-trigger.outputs.version_code }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📝 Version Name | \`${{ needs.check-trigger.outputs.version_name }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔐 Signed | ${{ steps.decode_keystore.outputs.signing_available }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📉 R8 Minified | true |" >> $GITHUB_STEP_SUMMARY
-
-  # ==========================================================================
-  # CREATE GITHUB RELEASE
-  # Automatically creates a release with the APK attached
-  # ==========================================================================
-  release:
-    name: 🚀 Create GitHub Release
-    runs-on: ubuntu-latest
-    needs: [check-trigger, build]
-    if: needs.check-trigger.outputs.should_build == 'true'
     permissions:
       contents: write
     
     steps:
-      - name: 📥 Download APK Artifact
-        uses: actions/download-artifact@v4
+      - name: 🔍 Check for #go trigger
+        id: check
+        run: |
+          if echo "${{ github.event.head_commit.message }}" | grep -q "#go"; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "⏭️ No #go trigger - skipping build"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📥 Checkout
+        if: steps.check.outputs.should_build == 'true'
+        uses: actions/checkout@v4
+
+      - name: 📅 Generate Version
+        if: steps.check.outputs.should_build == 'true'
+        id: version
+        run: |
+          echo "version_code=$(date -u +'%y%m%d%H%M')" >> $GITHUB_OUTPUT
+          echo "version_name=$(date -u +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
+
+      - name: ☕ Setup JDK
+        if: steps.check.outputs.should_build == 'true'
+        uses: actions/setup-java@v4
         with:
-          name: release-apk
-          path: ./release
-      
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - name: 🐘 Setup Gradle
+        if: steps.check.outputs.should_build == 'true'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 🔐 Decode Keystore
+        if: steps.check.outputs.should_build == 'true'
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/release.keystore
+
+      - name: 🏗️ Build Release APK
+        if: steps.check.outputs.should_build == 'true'
+        env:
+          CI_VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          CI_VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          KEYSTORE_FILE_PATH: ${{ github.workspace }}/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
+
+      - name: 📦 Rename APK
+        if: steps.check.outputs.should_build == 'true'
+        id: rename
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          NEW_NAME="PhotoSearchAI-${{ steps.version.outputs.version_name }}.apk"
+          mv "$APK_PATH" "app/build/outputs/apk/release/$NEW_NAME"
+          echo "apk_path=app/build/outputs/apk/release/$NEW_NAME" >> $GITHUB_OUTPUT
+
       - name: 🚀 Create GitHub Release
+        if: steps.check.outputs.should_build == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ needs.check-trigger.outputs.version_name }}
-          name: "Release ${{ needs.check-trigger.outputs.version_name }}"
+          tag_name: v${{ steps.version.outputs.version_name }}
+          name: "Release ${{ steps.version.outputs.version_name }}"
           body: |
-            ## 📱 PhotoSearchAI Release
-            
-            **Version:** ${{ needs.check-trigger.outputs.version_name }}
-            **Build:** ${{ needs.check-trigger.outputs.version_code }}
-            **Commit:** ${{ github.sha }}
-            
-            ### 📦 Installation
-            1. Download the APK below
-            2. Enable "Install from unknown sources" on your Android device
-            3. Install the APK
-            
-            ### ⚙️ Build Information
-            - ✅ R8/ProGuard minification enabled
-            - ✅ Universal APK (all ABIs)
-            - ✅ Signed release build
-            
-            ---
-            *Automatically generated by CI/CD pipeline*
-          files: |
-            ./release/*.apk
-          draft: false
-          prerelease: false
-          generate_release_notes: true
+            ## 📱 PhotoSearchAI v${{ steps.version.outputs.version_name }}
+            **Build:** ${{ steps.version.outputs.version_code }}
+          files: ${{ steps.rename.outputs.apk_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: 📊 Release Summary
-        run: |
-          echo "## 🚀 Release Created!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag:** v${{ needs.check-trigger.outputs.version_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "[View Release](https://github.com/${{ github.repository }}/releases/tag/v${{ needs.check-trigger.outputs.version_name }})" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: rm -f ${{ github.workspace }}/release.keystore
