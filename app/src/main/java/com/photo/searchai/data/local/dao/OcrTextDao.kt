@@ -16,7 +16,7 @@ interface OcrTextDao {
      * Insert OCR text, replacing if exists.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertOcrText(ocrText: OcrTextEntity)
+    suspend fun insertOcrText(ocrText: OcrTextEntity): Long
     
     /**
      * Get OCR text by image ID.

@@ -17,7 +17,7 @@ interface ImageDao {
      * Insert images, ignoring conflicts (already existing images).
      */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertImages(images: List<ImageEntity>)
+    suspend fun insertImages(images: List<ImageEntity>): List<Long>
     
     /**
      * Get IDs of unparsed images, limited to batch size.
@@ -35,7 +35,7 @@ interface ImageDao {
      * Mark an image as parsed.
      */
     @Query("UPDATE images SET parsed = 1 WHERE mediaStoreId = :id")
-    suspend fun markAsParsed(id: Long)
+    suspend fun markAsParsed(id: Long): Int
     
     /**
      * Get count of parsed images as Flow for live updates.
@@ -65,5 +65,5 @@ interface ImageDao {
      * Delete images that no longer exist in MediaStore.
      */
     @Query("DELETE FROM images WHERE mediaStoreId NOT IN (:validIds)")
-    suspend fun deleteStaleImages(validIds: List<Long>)
+    suspend fun deleteStaleImages(validIds: List<Long>): Int
 }
