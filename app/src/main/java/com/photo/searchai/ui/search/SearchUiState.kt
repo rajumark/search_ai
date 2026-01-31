@@ -14,6 +14,7 @@ data class SearchUiState(
     val isSearchActive: Boolean = false,
     val selectedImages: Set<Long> = emptySet(),
     val isInSelectionMode: Boolean = false,
+    val suggestions: List<String> = emptyList(),
     val imageWithTextList: List<ImageWithText> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null

@@ -11,7 +11,7 @@ import androidx.room.PrimaryKey
 @Entity(
     tableName = "images",
     indices = [
-        Index(value = ["ocrParsed"]),
+        Index(value = ["parsed"]),
         Index(value = ["barcodeParsed"]),
         Index(value = ["labelParsed"]),
         Index(value = ["mediaStoreId"])

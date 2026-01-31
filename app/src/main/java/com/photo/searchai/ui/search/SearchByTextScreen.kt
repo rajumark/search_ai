@@ -2,6 +2,7 @@ package com.photo.searchai.ui.search
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -146,10 +149,12 @@ fun SearchByTextScreen(
                 SearchTopBar(
                     query = uiState.searchQuery,
                     isActive = uiState.isSearchActive,
+                    suggestions = uiState.suggestions,
                     onQueryChange = { viewModel.onSearchQueryChanged(it) },
                     onActiveChange = { viewModel.onSearchActiveChanged(it) },
                     onClear = { viewModel.clearSearch() },
-                    onNavigateBack = onNavigateBack
+                    onNavigateBack = onNavigateBack,
+                    onSuggestionClick = { viewModel.onSuggestionClicked(it) }
                 )
             }
         }
@@ -210,50 +215,92 @@ fun SearchByTextScreen(
 private fun SearchTopBar(
     query: String,
     isActive: Boolean,
+    suggestions: List<String>,
     onQueryChange: (String) -> Unit,
     onActiveChange: (Boolean) -> Unit,
     onClear: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onSuggestionClick: (String) -> Unit
 ) {
-    SearchBar(
-        query = query,
-        onQueryChange = onQueryChange,
-        onSearch = { onActiveChange(false) },
-        active = false, // We don't expand, just use as a text field
-        onActiveChange = { },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = if (isActive) 0.dp else 16.dp)
-            .padding(top = 8.dp),
-        placeholder = { Text("Search by text in images...") },
-        leadingIcon = {
-            IconButton(onClick = onNavigateBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-        },
-        trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = onClear) {
+    androidx.compose.foundation.layout.Column(
+        modifier = Modifier.animateContentSize()
+    ) {
+        SearchBar(
+            query = query,
+            onQueryChange = onQueryChange,
+            onSearch = { onActiveChange(false) },
+            active = false, // We don't expand, just use as a text field
+            onActiveChange = { },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = if (isActive) 0.dp else 16.dp)
+                .padding(top = 8.dp),
+            placeholder = { Text("Search by text in images...") },
+            leadingIcon = {
+                IconButton(onClick = onNavigateBack) {
                     Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Clear"
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back"
                     )
                 }
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search"
-                )
-            }
-        },
-        colors = SearchBarDefaults.colors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        shape = RoundedCornerShape(28.dp)
-    ) { }
+            },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = onClear) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Clear"
+                        )
+                    }
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search"
+                    )
+                }
+            },
+            colors = SearchBarDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            shape = RoundedCornerShape(28.dp)
+        ) { }
+
+        SuggestionsChips(
+            suggestions = suggestions,
+            onSuggestionClick = onSuggestionClick
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SuggestionsChips(
+    suggestions: List<String>,
+    onSuggestionClick: (String) -> Unit
+) {
+    if (suggestions.isEmpty()) return
+
+    androidx.compose.foundation.layout.FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        suggestions.forEach { suggestion ->
+            androidx.compose.material3.AssistChip(
+                onClick = { onSuggestionClick(suggestion) },
+                label = { Text(suggestion) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

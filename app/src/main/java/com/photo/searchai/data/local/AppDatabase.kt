@@ -25,7 +25,7 @@ import com.photo.searchai.data.local.entity.OcrTextEntity
         ImageLabelEntity::class
     ],
     version = 2,
-    exportSchema = true
+    exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun imageDao(): ImageDao

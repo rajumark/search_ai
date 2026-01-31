@@ -49,5 +49,17 @@ interface OcrTextDao {
      */
     @Query("SELECT COUNT(*) FROM ocr_text")
     suspend fun getCount(): Int
+
+    /**
+     * Get sample of OCR texts for global frequency analysis.
+     */
+    @Query("SELECT * FROM ocr_text LIMIT :limit")
+    suspend fun getAllOcrTexts(limit: Int): List<OcrTextEntity>
+
+    /**
+     * Search OCR text with limit (for co-occurrence analysis).
+     */
+    @Query("SELECT * FROM ocr_text WHERE fullText LIKE '%' || :query || '%' OR indexedTokens LIKE '%' || :query || '%' LIMIT :limit")
+    suspend fun searchOcrTextsLimited(query: String, limit: Int): List<OcrTextEntity>
 }
 

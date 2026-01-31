@@ -89,6 +89,11 @@ interface OcrRepository {
      * Delete images by list of mediaStoreIds.
      */
     suspend fun deleteImages(ids: List<Long>)
+
+    /**
+     * Get search suggestions based on query.
+     */
+    suspend fun getSearchSuggestions(query: String): List<String>
 }
 
 @Singleton
@@ -224,6 +229,49 @@ class OcrRepositoryImpl @Inject constructor(
     
     override suspend fun deleteImages(ids: List<Long>) {
         imageDao.deleteImagesByIds(ids)
+    }
+
+    override suspend fun getSearchSuggestions(query: String): List<String> {
+        // Limit sample size for performance
+        val sampleLimit = 100 
+        val suggestionLimit = 10
+        val ignoredWords = setOf("the", "and", "or", "in", "on", "at", "to", "for", "of", "with")
+
+        val tokenCounts = mutableMapOf<String, Int>()
+        val queryTokens = query.lowercase().split("\\s+".toRegex()).filter { it.isNotEmpty() }.toSet()
+
+        if (query.isBlank()) {
+            // Global frequency
+            val sample = ocrTextDao.getAllOcrTexts(sampleLimit)
+            sample.forEach { entity ->
+                // Use indexedTokens if available as it should be pre-processed
+                val tokens = entity.indexedTokens.split(" ")
+                tokens.forEach { token ->
+                    val normalized = token.lowercase().trim()
+                    if (normalized.length > 2 && normalized !in ignoredWords) {
+                        tokenCounts[normalized] = tokenCounts.getOrDefault(normalized, 0) + 1
+                    }
+                }
+            }
+        } else {
+            // Co-occurrence frequency
+            val sample = ocrTextDao.searchOcrTextsLimited(query, sampleLimit)
+            sample.forEach { entity ->
+                val tokens = entity.indexedTokens.split(" ")
+                tokens.forEach { token ->
+                    val normalized = token.lowercase().trim()
+                    // Don't suggest words already in the query
+                    if (normalized.length > 2 && normalized !in ignoredWords && normalized !in queryTokens) {
+                         tokenCounts[normalized] = tokenCounts.getOrDefault(normalized, 0) + 1
+                    }
+                }
+            }
+        }
+
+        return tokenCounts.entries
+            .sortedByDescending { it.value }
+            .take(suggestionLimit)
+            .map { it.key }
     }
 }
 

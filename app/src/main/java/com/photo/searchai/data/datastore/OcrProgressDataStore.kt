@@ -8,17 +8,13 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
-private val Context.progressDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "image_processing_progress"
-)
+private val Context.progressDataStore: DataStore<Preferences> by
+        preferencesDataStore(name = "image_processing_progress")
 
-/**
- * Processing stage enumeration.
- */
 enum class ProcessingStage {
     IDLE,
     OCR,
@@ -27,112 +23,171 @@ enum class ProcessingStage {
     COMPLETE
 }
 
-/**
- * Data class representing image processing progress for all stages.
- */
-data class ProcessingProgress(
-    val totalImages: Int = 0,
-    // OCR stage
-    val ocrParsed: Int = 0,
-    val ocrPending: Int = 0,
-    // Barcode stage
-    val barcodeParsed: Int = 0,
-    val barcodePending: Int = 0,
-    // Labeling stage
-    val labelParsed: Int = 0,
-    val labelPending: Int = 0,
-    // Current processing state
-    val currentStage: ProcessingStage = ProcessingStage.IDLE,
-    val lastUpdated: Long = 0
+data class BenchmarkData(
+        val startTime: Long = 0L,
+        val timeTo10Percent: Long = 0L,
+        val timeTo30Percent: Long = 0L,
+        val timeTo50Percent: Long = 0L,
+        val timeTo70Percent: Long = 0L,
+        val timeTo100Percent: Long = 0L,
+        val totalImagesProcessed: Int = 0,
+        val isComplete: Boolean = false
 ) {
-    // Overall progress (0 to 1) across all stages
+    val averageTimePerImageMs: Long
+        get() =
+                if (totalImagesProcessed > 0 && timeTo100Percent > 0) {
+                    timeTo100Percent / totalImagesProcessed
+                } else 0L
+
+    val formattedAverageTime: String
+        get() {
+            val avgMs = averageTimePerImageMs
+            return when {
+                avgMs < 1000 -> "${avgMs}ms"
+                avgMs < 60000 -> String.format("%.1fs", avgMs / 1000.0)
+                else -> String.format("%.1fmin", avgMs / 60000.0)
+            }
+        }
+
+    fun formatMilestoneTime(milestoneMs: Long): String {
+        if (milestoneMs <= 0) return "—"
+        return when {
+            milestoneMs < 1000 -> "${milestoneMs}ms"
+            milestoneMs < 60000 -> String.format("%.1fs", milestoneMs / 1000.0)
+            milestoneMs < 3600000 -> String.format("%.1fmin", milestoneMs / 60000.0)
+            else -> String.format("%.1fh", milestoneMs / 3600000.0)
+        }
+    }
+
+    val milestones: List<Pair<String, String>>
+        get() =
+                listOf(
+                        "10%" to formatMilestoneTime(timeTo10Percent),
+                        "30%" to formatMilestoneTime(timeTo30Percent),
+                        "50%" to formatMilestoneTime(timeTo50Percent),
+                        "70%" to formatMilestoneTime(timeTo70Percent),
+                        "100%" to formatMilestoneTime(timeTo100Percent)
+                )
+}
+
+data class ProcessingProgress(
+        val totalImages: Int = 0,
+        val ocrParsed: Int = 0,
+        val ocrPending: Int = 0,
+        val barcodeParsed: Int = 0,
+        val barcodePending: Int = 0,
+        val labelParsed: Int = 0,
+        val labelPending: Int = 0,
+        val currentStage: ProcessingStage = ProcessingStage.IDLE,
+        val lastUpdated: Long = 0,
+        val benchmarkData: BenchmarkData = BenchmarkData()
+) {
     val overallProgress: Float
         get() {
-            val totalWork = totalImages * 3 // 3 stages per image
+            val totalWork = totalImages * 3
             if (totalWork <= 0) return 0f
             val completedWork = ocrParsed + barcodeParsed + labelParsed
             return completedWork.toFloat() / totalWork
         }
-    
-    // Stage-specific progress
+
     val ocrProgress: Float
         get() = if (totalImages > 0) ocrParsed.toFloat() / totalImages else 0f
-    
+
     val barcodeProgress: Float
         get() = if (totalImages > 0) barcodeParsed.toFloat() / totalImages else 0f
-    
+
     val labelProgress: Float
         get() = if (totalImages > 0) labelParsed.toFloat() / totalImages else 0f
-    
+
     val isComplete: Boolean
         get() = totalImages > 0 && ocrPending == 0 && barcodePending == 0 && labelPending == 0
-    
+
     val isProcessing: Boolean
         get() = currentStage != ProcessingStage.IDLE && currentStage != ProcessingStage.COMPLETE
 }
 
-// Legacy alias for backward compatibility
 typealias OcrProgress = ProcessingProgress
 
-/**
- * DataStore for persisting image processing progress state.
- * Tracks OCR, barcode scanning, and image labeling progress.
- */
-class OcrProgressDataStore @Inject constructor(
-    private val context: Context
-) {
+class OcrProgressDataStore @Inject constructor(private val context: Context) {
     private object Keys {
         val TOTAL_IMAGES = intPreferencesKey("total_images")
-        // OCR
         val OCR_PARSED = intPreferencesKey("ocr_parsed")
         val OCR_PENDING = intPreferencesKey("ocr_pending")
-        // Barcode
         val BARCODE_PARSED = intPreferencesKey("barcode_parsed")
         val BARCODE_PENDING = intPreferencesKey("barcode_pending")
-        // Label
         val LABEL_PARSED = intPreferencesKey("label_parsed")
         val LABEL_PENDING = intPreferencesKey("label_pending")
-        // State
         val CURRENT_STAGE = stringPreferencesKey("current_stage")
         val LAST_UPDATED = longPreferencesKey("last_updated")
-        
-        // Legacy keys for backward compatibility
         val PARSED_IMAGES = intPreferencesKey("parsed_images")
         val PENDING_IMAGES = intPreferencesKey("pending_images")
+
+        val BENCHMARK_START_TIME = longPreferencesKey("benchmark_start_time")
+        val BENCHMARK_TIME_10 = longPreferencesKey("benchmark_time_10")
+        val BENCHMARK_TIME_30 = longPreferencesKey("benchmark_time_30")
+        val BENCHMARK_TIME_50 = longPreferencesKey("benchmark_time_50")
+        val BENCHMARK_TIME_70 = longPreferencesKey("benchmark_time_70")
+        val BENCHMARK_TIME_100 = longPreferencesKey("benchmark_time_100")
+        val BENCHMARK_TOTAL_PROCESSED = intPreferencesKey("benchmark_total_processed")
+        val BENCHMARK_COMPLETE = intPreferencesKey("benchmark_complete")
     }
-    
-    /**
-     * Flow of current processing progress.
-     */
-    val progressFlow: Flow<ProcessingProgress> = context.progressDataStore.data.map { preferences ->
-        ProcessingProgress(
-            totalImages = preferences[Keys.TOTAL_IMAGES] ?: 0,
-            ocrParsed = preferences[Keys.OCR_PARSED] ?: preferences[Keys.PARSED_IMAGES] ?: 0,
-            ocrPending = preferences[Keys.OCR_PENDING] ?: preferences[Keys.PENDING_IMAGES] ?: 0,
-            barcodeParsed = preferences[Keys.BARCODE_PARSED] ?: 0,
-            barcodePending = preferences[Keys.BARCODE_PENDING] ?: 0,
-            labelParsed = preferences[Keys.LABEL_PARSED] ?: 0,
-            labelPending = preferences[Keys.LABEL_PENDING] ?: 0,
-            currentStage = try {
-                ProcessingStage.valueOf(preferences[Keys.CURRENT_STAGE] ?: "IDLE")
-            } catch (e: Exception) {
-                ProcessingStage.IDLE
-            },
-            lastUpdated = preferences[Keys.LAST_UPDATED] ?: 0
-        )
-    }
-    
-    /**
-     * Legacy method for backward compatibility.
-     * Updates OCR progress only.
-     */
+
+    val progressFlow: Flow<ProcessingProgress> =
+            context.progressDataStore.data.map { preferences ->
+                ProcessingProgress(
+                        totalImages = preferences[Keys.TOTAL_IMAGES] ?: 0,
+                        ocrParsed = preferences[Keys.OCR_PARSED]
+                                        ?: preferences[Keys.PARSED_IMAGES] ?: 0,
+                        ocrPending = preferences[Keys.OCR_PENDING]
+                                        ?: preferences[Keys.PENDING_IMAGES] ?: 0,
+                        barcodeParsed = preferences[Keys.BARCODE_PARSED] ?: 0,
+                        barcodePending = preferences[Keys.BARCODE_PENDING] ?: 0,
+                        labelParsed = preferences[Keys.LABEL_PARSED] ?: 0,
+                        labelPending = preferences[Keys.LABEL_PENDING] ?: 0,
+                        currentStage =
+                                try {
+                                    ProcessingStage.valueOf(
+                                            preferences[Keys.CURRENT_STAGE] ?: "IDLE"
+                                    )
+                                } catch (e: Exception) {
+                                    ProcessingStage.IDLE
+                                },
+                        lastUpdated = preferences[Keys.LAST_UPDATED] ?: 0,
+                        benchmarkData =
+                                BenchmarkData(
+                                        startTime = preferences[Keys.BENCHMARK_START_TIME] ?: 0L,
+                                        timeTo10Percent = preferences[Keys.BENCHMARK_TIME_10] ?: 0L,
+                                        timeTo30Percent = preferences[Keys.BENCHMARK_TIME_30] ?: 0L,
+                                        timeTo50Percent = preferences[Keys.BENCHMARK_TIME_50] ?: 0L,
+                                        timeTo70Percent = preferences[Keys.BENCHMARK_TIME_70] ?: 0L,
+                                        timeTo100Percent = preferences[Keys.BENCHMARK_TIME_100]
+                                                        ?: 0L,
+                                        totalImagesProcessed =
+                                                preferences[Keys.BENCHMARK_TOTAL_PROCESSED] ?: 0,
+                                        isComplete = (preferences[Keys.BENCHMARK_COMPLETE]
+                                                        ?: 0) == 1
+                                )
+                )
+            }
+
+    val benchmarkFlow: Flow<BenchmarkData> =
+            context.progressDataStore.data.map { preferences ->
+                BenchmarkData(
+                        startTime = preferences[Keys.BENCHMARK_START_TIME] ?: 0L,
+                        timeTo10Percent = preferences[Keys.BENCHMARK_TIME_10] ?: 0L,
+                        timeTo30Percent = preferences[Keys.BENCHMARK_TIME_30] ?: 0L,
+                        timeTo50Percent = preferences[Keys.BENCHMARK_TIME_50] ?: 0L,
+                        timeTo70Percent = preferences[Keys.BENCHMARK_TIME_70] ?: 0L,
+                        timeTo100Percent = preferences[Keys.BENCHMARK_TIME_100] ?: 0L,
+                        totalImagesProcessed = preferences[Keys.BENCHMARK_TOTAL_PROCESSED] ?: 0,
+                        isComplete = (preferences[Keys.BENCHMARK_COMPLETE] ?: 0) == 1
+                )
+            }
+
     suspend fun updateProgress(total: Int, parsed: Int, pending: Int) {
         updateOcrProgress(total, parsed, pending)
     }
-    
-    /**
-     * Update OCR processing progress.
-     */
+
     suspend fun updateOcrProgress(total: Int, parsed: Int, pending: Int) {
         context.progressDataStore.edit { preferences ->
             preferences[Keys.TOTAL_IMAGES] = total
@@ -141,10 +196,7 @@ class OcrProgressDataStore @Inject constructor(
             preferences[Keys.LAST_UPDATED] = System.currentTimeMillis()
         }
     }
-    
-    /**
-     * Update barcode processing progress.
-     */
+
     suspend fun updateBarcodeProgress(total: Int, parsed: Int, pending: Int) {
         context.progressDataStore.edit { preferences ->
             preferences[Keys.TOTAL_IMAGES] = total
@@ -153,10 +205,7 @@ class OcrProgressDataStore @Inject constructor(
             preferences[Keys.LAST_UPDATED] = System.currentTimeMillis()
         }
     }
-    
-    /**
-     * Update label processing progress.
-     */
+
     suspend fun updateLabelProgress(total: Int, parsed: Int, pending: Int) {
         context.progressDataStore.edit { preferences ->
             preferences[Keys.TOTAL_IMAGES] = total
@@ -165,26 +214,23 @@ class OcrProgressDataStore @Inject constructor(
             preferences[Keys.LAST_UPDATED] = System.currentTimeMillis()
         }
     }
-    
-    /**
-     * Update current processing stage.
-     */
+
     suspend fun updateCurrentStage(stage: ProcessingStage) {
         context.progressDataStore.edit { preferences ->
             preferences[Keys.CURRENT_STAGE] = stage.name
             preferences[Keys.LAST_UPDATED] = System.currentTimeMillis()
         }
     }
-    
-    /**
-     * Update all progress at once.
-     */
+
     suspend fun updateAllProgress(
-        total: Int,
-        ocrParsed: Int, ocrPending: Int,
-        barcodeParsed: Int, barcodePending: Int,
-        labelParsed: Int, labelPending: Int,
-        currentStage: ProcessingStage
+            total: Int,
+            ocrParsed: Int,
+            ocrPending: Int,
+            barcodeParsed: Int,
+            barcodePending: Int,
+            labelParsed: Int,
+            labelPending: Int,
+            currentStage: ProcessingStage
     ) {
         context.progressDataStore.edit { preferences ->
             preferences[Keys.TOTAL_IMAGES] = total
@@ -198,14 +244,75 @@ class OcrProgressDataStore @Inject constructor(
             preferences[Keys.LAST_UPDATED] = System.currentTimeMillis()
         }
     }
-    
-    /**
-     * Clear progress data.
-     */
-    suspend fun clearProgress() {
+
+    suspend fun startBenchmark() {
         context.progressDataStore.edit { preferences ->
-            preferences.clear()
+            preferences[Keys.BENCHMARK_START_TIME] = System.currentTimeMillis()
+            preferences[Keys.BENCHMARK_TIME_10] = 0L
+            preferences[Keys.BENCHMARK_TIME_30] = 0L
+            preferences[Keys.BENCHMARK_TIME_50] = 0L
+            preferences[Keys.BENCHMARK_TIME_70] = 0L
+            preferences[Keys.BENCHMARK_TIME_100] = 0L
+            preferences[Keys.BENCHMARK_TOTAL_PROCESSED] = 0
+            preferences[Keys.BENCHMARK_COMPLETE] = 0
+        }
+    }
+
+    suspend fun recordMilestone(percentComplete: Int, totalProcessed: Int) {
+        context.progressDataStore.edit { preferences ->
+            val startTime = preferences[Keys.BENCHMARK_START_TIME] ?: return@edit
+            val elapsed = System.currentTimeMillis() - startTime
+
+            when (percentComplete) {
+                10 ->
+                        if ((preferences[Keys.BENCHMARK_TIME_10] ?: 0L) == 0L) {
+                            preferences[Keys.BENCHMARK_TIME_10] = elapsed
+                        }
+                30 ->
+                        if ((preferences[Keys.BENCHMARK_TIME_30] ?: 0L) == 0L) {
+                            preferences[Keys.BENCHMARK_TIME_30] = elapsed
+                        }
+                50 ->
+                        if ((preferences[Keys.BENCHMARK_TIME_50] ?: 0L) == 0L) {
+                            preferences[Keys.BENCHMARK_TIME_50] = elapsed
+                        }
+                70 ->
+                        if ((preferences[Keys.BENCHMARK_TIME_70] ?: 0L) == 0L) {
+                            preferences[Keys.BENCHMARK_TIME_70] = elapsed
+                        }
+                100 -> {
+                    preferences[Keys.BENCHMARK_TIME_100] = elapsed
+                    preferences[Keys.BENCHMARK_COMPLETE] = 1
+                }
+            }
+            preferences[Keys.BENCHMARK_TOTAL_PROCESSED] = totalProcessed
+        }
+    }
+
+    suspend fun completeBenchmark(totalProcessed: Int) {
+        context.progressDataStore.edit { preferences ->
+            val startTime = preferences[Keys.BENCHMARK_START_TIME] ?: return@edit
+            val elapsed = System.currentTimeMillis() - startTime
+            preferences[Keys.BENCHMARK_TIME_100] = elapsed
+            preferences[Keys.BENCHMARK_TOTAL_PROCESSED] = totalProcessed
+            preferences[Keys.BENCHMARK_COMPLETE] = 1
+        }
+    }
+
+    suspend fun clearProgress() {
+        context.progressDataStore.edit { preferences -> preferences.clear() }
+    }
+
+    suspend fun clearBenchmark() {
+        context.progressDataStore.edit { preferences ->
+            preferences.remove(Keys.BENCHMARK_START_TIME)
+            preferences.remove(Keys.BENCHMARK_TIME_10)
+            preferences.remove(Keys.BENCHMARK_TIME_30)
+            preferences.remove(Keys.BENCHMARK_TIME_50)
+            preferences.remove(Keys.BENCHMARK_TIME_70)
+            preferences.remove(Keys.BENCHMARK_TIME_100)
+            preferences.remove(Keys.BENCHMARK_TOTAL_PROCESSED)
+            preferences.remove(Keys.BENCHMARK_COMPLETE)
         }
     }
 }
-

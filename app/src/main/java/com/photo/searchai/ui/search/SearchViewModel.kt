@@ -49,12 +49,17 @@ class SearchViewModel @Inject constructor(
 
     private val searchQueryFlow = MutableStateFlow("")
 
+    init {
+        loadSuggestions("")
+    }
+
     // Paginated search results
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     val searchResults: Flow<PagingData<ImageWithText>> = searchQueryFlow
         .debounce(300) // Wait 300ms after user stops typing
         .distinctUntilChanged()
         .flatMapLatest { query ->
+            loadSuggestions(query) // Update suggestions when query changes (debounced)
             if (query.isBlank()) {
                 ocrRepository.getAllOcrTextPaging()
             } else {
@@ -87,6 +92,34 @@ class SearchViewModel @Inject constructor(
     }
 
     /**
+     * Loads search suggestions based on the current query.
+     */
+    private fun loadSuggestions(query: String) {
+        viewModelScope.launch {
+            try {
+                val suggestions = ocrRepository.getSearchSuggestions(query)
+                _uiState.update { it.copy(suggestions = suggestions) }
+            } catch (e: Exception) {
+                // Ignore errors for suggestions
+            }
+        }
+    }
+
+    /**
+     * Called when a suggestion chip is clicked.
+     * Appends the suggestion to the current query.
+     */
+    fun onSuggestionClicked(suggestion: String) {
+        val currentQuery = _uiState.value.searchQuery
+        val newQuery = if (currentQuery.isBlank()) {
+            suggestion
+        } else {
+            "$currentQuery $suggestion"
+        }
+        onSearchQueryChanged(newQuery)
+    }
+
+    /**
      * Toggles search active state.
      */
     fun onSearchActiveChanged(active: Boolean) {
@@ -99,6 +132,7 @@ class SearchViewModel @Inject constructor(
     fun clearSearch() {
         _uiState.update { it.copy(searchQuery = "", isSearchActive = false) }
         searchQueryFlow.value = ""
+        loadSuggestions("")
     }
 
     /**
@@ -179,7 +213,7 @@ class SearchViewModel @Inject constructor(
         viewModelScope.launch {
             val selectedIds = _uiState.value.selectedImages.toList()
             if (selectedIds.isEmpty()) return@launch
-
+ 
             try {
                 ocrRepository.deleteImages(selectedIds)
                 _events.emit(SearchEvent.ShowToast("${selectedIds.size} image(s) deleted"))
@@ -197,7 +231,7 @@ class SearchViewModel @Inject constructor(
         viewModelScope.launch {
             val selectedIds = _uiState.value.selectedImages.toList()
             if (selectedIds.isEmpty()) return@launch
-
+ 
             try {
                 val images = ocrRepository.getImagesByIds(selectedIds)
                 val uris = images.mapNotNull { image ->
@@ -214,7 +248,7 @@ class SearchViewModel @Inject constructor(
                         }
                     } else null
                 }
-
+ 
                 if (uris.isNotEmpty()) {
                     val shareIntent = Intent().apply {
                         action = Intent.ACTION_SEND_MULTIPLE
