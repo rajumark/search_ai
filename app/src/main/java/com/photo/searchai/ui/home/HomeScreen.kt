@@ -30,7 +30,9 @@ import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.Face
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Speed
@@ -77,7 +79,9 @@ fun HomeScreen(
         onNavigateToSearch: () -> Unit,
         onNavigateToFaceSearch: () -> Unit = {},
         onNavigateToBarcodePhotos: () -> Unit = {},
-        onNavigateToScanner: () -> Unit = {}
+        onNavigateToScanner: () -> Unit = {},
+        onNavigateToRefreshHistory: () -> Unit = {},
+        onNavigateToBatterySettings: () -> Unit = {}
 ) {
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -104,6 +108,14 @@ fun HomeScreen(
                                 onNavigateToScanner = {
                                         scope.launch { drawerState.close() }
                                         onNavigateToScanner()
+                                },
+                                onNavigateToRefreshHistory = {
+                                        scope.launch { drawerState.close() }
+                                        onNavigateToRefreshHistory()
+                                },
+                                onNavigateToBatterySettings = {
+                                        scope.launch { drawerState.close() }
+                                        onNavigateToBatterySettings()
                                 }
                         )
                 }
@@ -871,7 +883,9 @@ private fun NavigationDrawerContent(
         onNavigateToSearch: () -> Unit,
         onNavigateToFaceSearch: () -> Unit,
         onNavigateToBarcodePhotos: () -> Unit,
-        onNavigateToScanner: () -> Unit
+        onNavigateToScanner: () -> Unit,
+        onNavigateToRefreshHistory: () -> Unit,
+        onNavigateToBatterySettings: () -> Unit
 ) {
         ModalDrawerSheet(modifier = Modifier.width(300.dp)) {
                 Column(
@@ -957,6 +971,22 @@ private fun NavigationDrawerContent(
                         subtitle = "Coming soon",
                         enabled = false,
                         onClick = onNavigateToScanner
+                )
+
+                DrawerMenuItem(
+                        icon = Icons.Rounded.History,
+                        label = "Refresh History",
+                        subtitle = "View background processing",
+                        enabled = true,
+                        onClick = onNavigateToRefreshHistory
+                )
+
+                DrawerMenuItem(
+                        icon = Icons.Rounded.PowerSettingsNew,
+                        label = "Battery Settings",
+                        subtitle = "Configure background access",
+                        enabled = true,
+                        onClick = onNavigateToBatterySettings
                 )
         }
 }

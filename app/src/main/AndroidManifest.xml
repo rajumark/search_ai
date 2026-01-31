@@ -14,6 +14,12 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     
+    <!-- Battery optimization permission (for requesting exemption) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    
+    <!-- Wake lock permission (used judiciously for critical processing) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
     <!-- Notification permission for Android 13+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -51,11 +57,18 @@
                 tools:node="remove" />
         </provider>
         
-        <!-- Foreground service for OCR processing -->
+        <!-- Foreground service for WorkManager OCR processing -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
+        
+        <!-- Image Processing Foreground Service -->
+        <service
+            android:name=".service.ImageProcessingService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
         
         <!-- FileProvider for sharing images -->
         <provider
