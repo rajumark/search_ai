@@ -85,12 +85,20 @@ constructor(
                         // STAGE 3: Image Labeling
                         processLabelStage()
 
+                        // STAGE 4: Face Detection
+                        processFaceDetectionStage()
+
                         // Check if any new images were added during processing
                         val ocrPending = imageDao.getPendingCountFlow().first()
                         val barcodePending = imageDao.getBarcodePendingCountFlow().first()
                         val labelPending = imageDao.getLabelPendingCountFlow().first()
+                        val facePending = imageDao.getFacePendingCountFlow().first()
 
-                        hasMoreWork = ocrPending > 0 || barcodePending > 0 || labelPending > 0
+                        hasMoreWork =
+                                ocrPending > 0 ||
+                                        barcodePending > 0 ||
+                                        labelPending > 0 ||
+                                        facePending > 0
                     }
 
                     // Final completion
@@ -467,9 +475,10 @@ constructor(
 
         val stageNumber =
                 when (stage) {
-                    ProcessingStage.OCR -> "1/3"
-                    ProcessingStage.BARCODE -> "2/3"
-                    ProcessingStage.LABELING -> "3/3"
+                    ProcessingStage.OCR -> "1/4"
+                    ProcessingStage.BARCODE -> "2/4"
+                    ProcessingStage.LABELING -> "3/4"
+                    ProcessingStage.FACE_DETECTION -> "4/4"
                     else -> ""
                 }
 
