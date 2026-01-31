@@ -46,8 +46,15 @@ class OcrIndexingWorker @AssistedInject constructor(
         private const val BATCH_SIZE = 25
     }
     
+    private val notificationManager: NotificationManager by lazy {
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    }
+    
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
+            // Create notification channel first
+            createNotificationChannel()
+            
             // Show foreground notification
             setForeground(createForegroundInfo(0, 0))
             
@@ -63,27 +70,32 @@ class OcrIndexingWorker @AssistedInject constructor(
                     break
                 }
                 
+                // Get current counts for progress calculation
+                val total = imageDao.getTotalCountFlow().first()
+                var parsed = imageDao.getParsedCountFlow().first()
+                
                 // Process each image in batch
-                for (imageId in unparsedIds) {
+                for ((index, imageId) in unparsedIds.withIndex()) {
                     val success = processImage(imageId)
                     if (success) {
                         processedInSession++
+                        parsed++
                     }
+                    
+                    // Update notification after EACH image for live progress
+                    val pending = total - parsed
+                    progressDataStore.updateProgress(total, parsed, pending)
+                    updateNotification(parsed, total)
                 }
-                
-                // Update progress after each batch
-                val total = imageDao.getTotalCountFlow().first()
-                val parsed = imageDao.getParsedCountFlow().first()
-                val pending = total - parsed
-                
-                progressDataStore.updateProgress(total, parsed, pending)
-                setForeground(createForegroundInfo(parsed, total))
             }
             
             // Final progress update
             val total = imageDao.getTotalCountFlow().first()
             val parsed = imageDao.getParsedCountFlow().first()
             progressDataStore.updateProgress(total, parsed, 0)
+            
+            // Show completion notification
+            showCompletionNotification(total)
             
             Result.success()
         } catch (e: Exception) {
@@ -133,6 +145,46 @@ class OcrIndexingWorker @AssistedInject constructor(
         }
     }
     
+    /**
+     * Updates the notification with current progress.
+     * This is called frequently for live progress updates.
+     */
+    private fun updateNotification(parsed: Int, total: Int) {
+        val progress = if (total > 0) (parsed * 100 / total) else 0
+        val title = "Indexing photos"
+        val content = "$parsed of $total photos ($progress%)"
+        
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(content)
+            .setSmallIcon(android.R.drawable.ic_menu_camera)
+            .setProgress(total, parsed, false) // Use actual values for smoother progress
+            .setOngoing(true)
+            .setOnlyAlertOnce(true) // Prevent sound/vibration on each update
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .build()
+        
+        notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+    
+    /**
+     * Shows a completion notification when all photos are indexed.
+     */
+    private fun showCompletionNotification(total: Int) {
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setContentTitle("Photo indexing complete!")
+            .setContentText("Successfully indexed $total photos. Ready to search!")
+            .setSmallIcon(android.R.drawable.ic_menu_gallery)
+            .setProgress(0, 0, false) // Remove progress bar
+            .setOngoing(false) // Allow user to dismiss
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+        
+        notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+    
     private fun createForegroundInfo(parsed: Int, total: Int): ForegroundInfo {
         createNotificationChannel()
         
@@ -146,7 +198,9 @@ class OcrIndexingWorker @AssistedInject constructor(
             .setSmallIcon(android.R.drawable.ic_menu_camera)
             .setProgress(100, progress, total == 0)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .build()
         
         // Android 10+ (API 29+) requires foreground service type
@@ -170,9 +224,9 @@ class OcrIndexingWorker @AssistedInject constructor(
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Shows progress of photo OCR indexing"
+                setShowBadge(false) // Don't show badge for progress notifications
             }
             
-            val notificationManager = context.getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
         }
     }
