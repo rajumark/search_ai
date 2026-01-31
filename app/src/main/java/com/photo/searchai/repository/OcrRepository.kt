@@ -1,5 +1,8 @@
 package com.photo.searchai.repository
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.photo.searchai.data.datastore.OcrProgress
 import com.photo.searchai.data.datastore.OcrProgressDataStore
 import com.photo.searchai.data.local.dao.ImageDao
@@ -9,7 +12,6 @@ import com.photo.searchai.data.local.entity.OcrTextEntity
 import com.photo.searchai.datasource.PhotoDataSource
 import com.photo.searchai.worker.WorkManagerHelper
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -64,6 +66,31 @@ interface OcrRepository {
      * Search OCR text.
      */
     suspend fun searchOcrText(query: String): List<OcrTextEntity>
+    
+    /**
+     * Search OCR text with paging support.
+     */
+    fun searchOcrTextPaging(query: String): Flow<PagingData<OcrTextEntity>>
+    
+    /**
+     * Get all OCR text with paging (for empty query).
+     */
+    fun getAllOcrTextPaging(): Flow<PagingData<OcrTextEntity>>
+    
+    /**
+     * Get image entity by mediaStoreId.
+     */
+    suspend fun getImageById(id: Long): ImageEntity?
+    
+    /**
+     * Get images by list of mediaStoreIds.
+     */
+    suspend fun getImagesByIds(ids: List<Long>): List<ImageEntity>
+    
+    /**
+     * Delete images by list of mediaStoreIds.
+     */
+    suspend fun deleteImages(ids: List<Long>)
 }
 
 @Singleton
@@ -74,6 +101,10 @@ class OcrRepositoryImpl @Inject constructor(
     private val workManagerHelper: WorkManagerHelper,
     private val progressDataStore: OcrProgressDataStore
 ) : OcrRepository {
+    
+    companion object {
+        private const val PAGE_SIZE = 18 // 3x3 grid, load 2 pages worth
+    }
     
     override suspend fun syncImagesFromMediaStore() {
         // Get all images from MediaStore
@@ -136,4 +167,39 @@ class OcrRepositoryImpl @Inject constructor(
     override suspend fun searchOcrText(query: String): List<OcrTextEntity> {
         return ocrTextDao.searchOcrText(query)
     }
+    
+    override fun searchOcrTextPaging(query: String): Flow<PagingData<OcrTextEntity>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = PAGE_SIZE,
+                enablePlaceholders = false,
+                prefetchDistance = PAGE_SIZE / 2
+            ),
+            pagingSourceFactory = { ocrTextDao.searchOcrTextPaging(query) }
+        ).flow
+    }
+    
+    override fun getAllOcrTextPaging(): Flow<PagingData<OcrTextEntity>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = PAGE_SIZE,
+                enablePlaceholders = false,
+                prefetchDistance = PAGE_SIZE / 2
+            ),
+            pagingSourceFactory = { ocrTextDao.getAllOcrTextPaging() }
+        ).flow
+    }
+    
+    override suspend fun getImageById(id: Long): ImageEntity? {
+        return imageDao.getImageById(id)
+    }
+    
+    override suspend fun getImagesByIds(ids: List<Long>): List<ImageEntity> {
+        return imageDao.getImagesByIds(ids)
+    }
+    
+    override suspend fun deleteImages(ids: List<Long>) {
+        imageDao.deleteImagesByIds(ids)
+    }
 }
+

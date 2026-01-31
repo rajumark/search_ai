@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- External storage for images shared from gallery -->
+    <external-path
+        name="external_files"
+        path="." />
+    
+    <!-- Root storage path for legacy devices -->
+    <root-path
+        name="root"
+        path="." />
+    
+    <!-- External storage DCIM folder -->
+    <external-path
+        name="dcim"
+        path="DCIM/" />
+    
+    <!-- External storage Pictures folder -->
+    <external-path
+        name="pictures"
+        path="Pictures/" />
+        
+    <!-- External storage Download folder -->
+    <external-path
+        name="downloads"
+        path="Download/" />
+</paths>

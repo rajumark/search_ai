@@ -66,4 +66,23 @@ interface ImageDao {
      */
     @Query("DELETE FROM images WHERE mediaStoreId NOT IN (:validIds)")
     suspend fun deleteStaleImages(validIds: List<Long>): Int
+    
+    /**
+     * Get images by list of mediaStoreIds.
+     */
+    @Query("SELECT * FROM images WHERE mediaStoreId IN (:ids)")
+    suspend fun getImagesByIds(ids: List<Long>): List<ImageEntity>
+    
+    /**
+     * Delete image by mediaStoreId.
+     */
+    @Query("DELETE FROM images WHERE mediaStoreId = :id")
+    suspend fun deleteImageById(id: Long): Int
+    
+    /**
+     * Delete images by list of mediaStoreIds.
+     */
+    @Query("DELETE FROM images WHERE mediaStoreId IN (:ids)")
+    suspend fun deleteImagesByIds(ids: List<Long>): Int
 }
+
