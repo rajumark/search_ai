@@ -1,5 +1,6 @@
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 plugins {
     alias(libs.plugins.android.application)
@@ -10,25 +11,26 @@ plugins {
 
 // ============================================================================
 // DYNAMIC VERSIONING
-// Generates version code and name automatically based on datetime
-// Format: YYYYMMDDHHMM (e.g., 202601311628)
-// This ensures unique versions without manual bumping
+// Generates version code based on minutes since Jan 1, 2020
+// This ensures unique, incrementing versions that fit within Int range
+// Max value ~4.1 million per year, lasting until ~2500+ before overflow
 // ============================================================================
 fun generateVersionCode(): Int {
     // Use CI-provided timestamp or current time
     val ciTimestamp = System.getenv("CI_VERSION_CODE")
     return if (!ciTimestamp.isNullOrEmpty()) {
-        ciTimestamp.toIntOrNull() ?: run {
-            val now = LocalDateTime.now()
-            val formatter = DateTimeFormatter.ofPattern("yyMMddHHmm")
-            now.format(formatter).toInt()
-        }
+        ciTimestamp.toIntOrNull() ?: calculateVersionCode()
     } else {
-        // For local development: use shorter format to stay within Int range
-        val now = LocalDateTime.now()
-        val formatter = DateTimeFormatter.ofPattern("yyMMddHHmm")
-        now.format(formatter).toInt()
+        calculateVersionCode()
     }
+}
+
+fun calculateVersionCode(): Int {
+    // Calculate minutes since Jan 1, 2020 00:00
+    // This gives us unique, incrementing version codes that fit in Int range
+    val epoch = LocalDateTime.of(2020, 1, 1, 0, 0)
+    val now = LocalDateTime.now()
+    return ChronoUnit.MINUTES.between(epoch, now).toInt()
 }
 
 fun generateVersionName(): String {
@@ -102,10 +104,12 @@ android {
                 "proguard-rules.pro"
             )
             
-            // Use release signing config if available
+            // Use release signing config if available, otherwise use debug signing
             val keystoreFilePath = System.getenv("KEYSTORE_FILE_PATH")
-            if (!keystoreFilePath.isNullOrEmpty()) {
-                signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (!keystoreFilePath.isNullOrEmpty()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
             }
         }
         
