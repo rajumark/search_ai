@@ -108,9 +108,7 @@ class HomeViewModel @Inject constructor(private val ocrRepository: OcrRepository
                         }
 
                 val benchmarkData = progress.benchmarkData
-                val showBenchmarkCard =
-                        benchmarkData.isComplete ||
-                                (benchmarkData.startTime > 0 && benchmarkData.timeTo10Percent > 0)
+                val showBenchmarkCard = true
 
                 HomeUiState(
                         totalImages = total,
