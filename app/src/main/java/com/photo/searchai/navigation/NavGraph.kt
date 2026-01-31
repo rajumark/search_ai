@@ -17,6 +17,9 @@ import com.photo.searchai.ui.home.HomeViewModel
 import com.photo.searchai.ui.permission.NavigationEvent
 import com.photo.searchai.ui.permission.PermissionScreen
 import com.photo.searchai.ui.permission.PermissionViewModel
+import com.photo.searchai.ui.screens.BarcodePhotosScreen
+import com.photo.searchai.ui.screens.DocumentScannerScreen
+import com.photo.searchai.ui.screens.FaceSearchScreen
 import com.photo.searchai.ui.search.SearchByTextScreen
 import com.photo.searchai.ui.search.SearchViewModel
 
@@ -54,6 +57,15 @@ fun NavGraph(
                 viewModel = viewModel,
                 onNavigateToSearch = {
                     navController.navigate(NavRoutes.SearchByText.route)
+                },
+                onNavigateToFaceSearch = {
+                    navController.navigate(NavRoutes.FaceSearch.route)
+                },
+                onNavigateToBarcodePhotos = {
+                    navController.navigate(NavRoutes.BarcodePhotos.route)
+                },
+                onNavigateToScanner = {
+                    navController.navigate(NavRoutes.DocumentScanner.route)
                 }
             )
         }
@@ -66,6 +78,24 @@ fun NavGraph(
                 onNavigateToFullScreen = { mediaStoreId, index ->
                     navController.navigate(NavRoutes.FullScreenImage.createRoute(mediaStoreId, index))
                 }
+            )
+        }
+        
+        composable(NavRoutes.FaceSearch.route) {
+            FaceSearchScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        
+        composable(NavRoutes.BarcodePhotos.route) {
+            BarcodePhotosScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        
+        composable(NavRoutes.DocumentScanner.route) {
+            DocumentScannerScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
         
@@ -84,4 +114,3 @@ fun NavGraph(
         }
     }
 }
-
