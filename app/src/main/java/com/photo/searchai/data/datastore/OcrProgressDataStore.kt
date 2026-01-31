@@ -20,6 +20,7 @@ enum class ProcessingStage {
     OCR,
     BARCODE,
     LABELING,
+    FACE_DETECTION,
     COMPLETE
 }
 
@@ -78,15 +79,17 @@ data class ProcessingProgress(
         val barcodePending: Int = 0,
         val labelParsed: Int = 0,
         val labelPending: Int = 0,
+        val faceParsed: Int = 0,
+        val facePending: Int = 0,
         val currentStage: ProcessingStage = ProcessingStage.IDLE,
         val lastUpdated: Long = 0,
         val benchmarkData: BenchmarkData = BenchmarkData()
 ) {
     val overallProgress: Float
         get() {
-            val totalWork = totalImages * 3
+            val totalWork = totalImages * 4 // 4 stages now
             if (totalWork <= 0) return 0f
-            val completedWork = ocrParsed + barcodeParsed + labelParsed
+            val completedWork = ocrParsed + barcodeParsed + labelParsed + faceParsed
             return completedWork.toFloat() / totalWork
         }
 
@@ -99,8 +102,16 @@ data class ProcessingProgress(
     val labelProgress: Float
         get() = if (totalImages > 0) labelParsed.toFloat() / totalImages else 0f
 
+    val faceProgress: Float
+        get() = if (totalImages > 0) faceParsed.toFloat() / totalImages else 0f
+
     val isComplete: Boolean
-        get() = totalImages > 0 && ocrPending == 0 && barcodePending == 0 && labelPending == 0
+        get() =
+                totalImages > 0 &&
+                        ocrPending == 0 &&
+                        barcodePending == 0 &&
+                        labelPending == 0 &&
+                        facePending == 0
 
     val isProcessing: Boolean
         get() = currentStage != ProcessingStage.IDLE && currentStage != ProcessingStage.COMPLETE
@@ -117,6 +128,8 @@ class OcrProgressDataStore @Inject constructor(private val context: Context) {
         val BARCODE_PENDING = intPreferencesKey("barcode_pending")
         val LABEL_PARSED = intPreferencesKey("label_parsed")
         val LABEL_PENDING = intPreferencesKey("label_pending")
+        val FACE_PARSED = intPreferencesKey("face_parsed")
+        val FACE_PENDING = intPreferencesKey("face_pending")
         val CURRENT_STAGE = stringPreferencesKey("current_stage")
         val LAST_UPDATED = longPreferencesKey("last_updated")
         val PARSED_IMAGES = intPreferencesKey("parsed_images")
@@ -144,6 +157,8 @@ class OcrProgressDataStore @Inject constructor(private val context: Context) {
                         barcodePending = preferences[Keys.BARCODE_PENDING] ?: 0,
                         labelParsed = preferences[Keys.LABEL_PARSED] ?: 0,
                         labelPending = preferences[Keys.LABEL_PENDING] ?: 0,
+                        faceParsed = preferences[Keys.FACE_PARSED] ?: 0,
+                        facePending = preferences[Keys.FACE_PENDING] ?: 0,
                         currentStage =
                                 try {
                                     ProcessingStage.valueOf(
@@ -215,6 +230,15 @@ class OcrProgressDataStore @Inject constructor(private val context: Context) {
         }
     }
 
+    suspend fun updateFaceProgress(total: Int, parsed: Int, pending: Int) {
+        context.progressDataStore.edit { preferences ->
+            preferences[Keys.TOTAL_IMAGES] = total
+            preferences[Keys.FACE_PARSED] = parsed
+            preferences[Keys.FACE_PENDING] = pending
+            preferences[Keys.LAST_UPDATED] = System.currentTimeMillis()
+        }
+    }
+
     suspend fun updateCurrentStage(stage: ProcessingStage) {
         context.progressDataStore.edit { preferences ->
             preferences[Keys.CURRENT_STAGE] = stage.name
@@ -230,6 +254,8 @@ class OcrProgressDataStore @Inject constructor(private val context: Context) {
             barcodePending: Int,
             labelParsed: Int,
             labelPending: Int,
+            faceParsed: Int,
+            facePending: Int,
             currentStage: ProcessingStage
     ) {
         context.progressDataStore.edit { preferences ->
@@ -240,6 +266,8 @@ class OcrProgressDataStore @Inject constructor(private val context: Context) {
             preferences[Keys.BARCODE_PENDING] = barcodePending
             preferences[Keys.LABEL_PARSED] = labelParsed
             preferences[Keys.LABEL_PENDING] = labelPending
+            preferences[Keys.FACE_PARSED] = faceParsed
+            preferences[Keys.FACE_PENDING] = facePending
             preferences[Keys.CURRENT_STAGE] = currentStage.name
             preferences[Keys.LAST_UPDATED] = System.currentTimeMillis()
         }

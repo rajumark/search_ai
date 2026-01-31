@@ -10,12 +10,14 @@ import com.photo.searchai.data.datastore.OcrProgressDataStore
 import com.photo.searchai.data.datastore.ScheduledWorkDataStore
 import com.photo.searchai.data.local.AppDatabase
 import com.photo.searchai.data.local.dao.BarcodeDao
+import com.photo.searchai.data.local.dao.FaceDao
 import com.photo.searchai.data.local.dao.ImageDao
 import com.photo.searchai.data.local.dao.ImageLabelDao
 import com.photo.searchai.data.local.dao.OcrTextDao
 import com.photo.searchai.data.local.dao.WorkerHistoryDao
 import com.photo.searchai.datasource.PhotoDataSource
 import com.photo.searchai.ocr.BarcodeProcessor
+import com.photo.searchai.ocr.FaceDetectionProcessor
 import com.photo.searchai.ocr.ImageLabelProcessor
 import com.photo.searchai.ocr.OcrProcessor
 import com.photo.searchai.repository.OcrRepository
@@ -87,6 +89,12 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideFaceDao(database: AppDatabase): FaceDao {
+        return database.faceDao()
+    }
+
+    @Provides
+    @Singleton
     fun provideWorkerHistoryDao(database: AppDatabase): WorkerHistoryDao {
         return database.workerHistoryDao()
     }
@@ -153,6 +161,12 @@ object AppModule {
     @Singleton
     fun provideImageLabelProcessor(): ImageLabelProcessor {
         return ImageLabelProcessor()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFaceDetectionProcessor(): FaceDetectionProcessor {
+        return FaceDetectionProcessor()
     }
 
     // OCR Repository

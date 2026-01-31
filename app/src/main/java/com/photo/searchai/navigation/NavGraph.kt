@@ -22,6 +22,7 @@ import com.photo.searchai.ui.permission.PermissionViewModel
 import com.photo.searchai.ui.screens.BarcodePhotosScreen
 import com.photo.searchai.ui.screens.DocumentScannerScreen
 import com.photo.searchai.ui.screens.FaceSearchScreen
+import com.photo.searchai.ui.screens.FaceSearchViewModel
 import com.photo.searchai.ui.search.SearchByTextScreen
 import com.photo.searchai.ui.search.SearchViewModel
 
@@ -87,7 +88,16 @@ fun NavGraph(
         }
 
         composable(NavRoutes.FaceSearch.route) {
-            FaceSearchScreen(onNavigateBack = { navController.popBackStack() })
+            val viewModel: FaceSearchViewModel = hiltViewModel()
+            FaceSearchScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToFullScreen = { mediaStoreId, index ->
+                        navController.navigate(
+                                NavRoutes.FullScreenImage.createRoute(mediaStoreId, index)
+                        )
+                    }
+            )
         }
 
         composable(NavRoutes.BarcodePhotos.route) {

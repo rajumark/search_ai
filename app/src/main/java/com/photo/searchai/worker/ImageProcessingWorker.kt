@@ -14,6 +14,7 @@ import com.photo.searchai.R
 import com.photo.searchai.data.datastore.OcrProgressDataStore
 import com.photo.searchai.data.datastore.ProcessingStage
 import com.photo.searchai.data.local.dao.BarcodeDao
+import com.photo.searchai.data.local.dao.FaceDao
 import com.photo.searchai.data.local.dao.ImageDao
 import com.photo.searchai.data.local.dao.ImageLabelDao
 import com.photo.searchai.data.local.dao.OcrTextDao
@@ -22,6 +23,7 @@ import com.photo.searchai.data.local.entity.ImageLabelEntity
 import com.photo.searchai.data.local.entity.OcrTextEntity
 import com.photo.searchai.datasource.PhotoDataSource
 import com.photo.searchai.ocr.BarcodeProcessor
+import com.photo.searchai.ocr.FaceDetectionProcessor
 import com.photo.searchai.ocr.ImageLabelProcessor
 import com.photo.searchai.ocr.OcrProcessor
 import dagger.assisted.Assisted
@@ -48,6 +50,8 @@ constructor(
         private val ocrProcessor: OcrProcessor,
         private val barcodeProcessor: BarcodeProcessor,
         private val imageLabelProcessor: ImageLabelProcessor,
+        private val faceDao: FaceDao,
+        private val faceDetectionProcessor: FaceDetectionProcessor,
         private val progressDataStore: OcrProgressDataStore
 ) : CoroutineWorker(context, workerParams) {
 
@@ -295,6 +299,111 @@ constructor(
     }
 
     // ============================================================================
+    // STAGE 4: Face Detection
+    // ============================================================================
+    private suspend fun processFaceDetectionStage() {
+        progressDataStore.updateCurrentStage(ProcessingStage.FACE_DETECTION)
+
+        while (true) {
+            val unparsedIds = imageDao.getUnparsedFaceImageIds(BATCH_SIZE)
+            if (unparsedIds.isEmpty()) break
+
+            val total = imageDao.getTotalCountFlow().first()
+            var parsed = imageDao.getFaceParsedCountFlow().first()
+
+            for (imageId in unparsedIds) {
+                val success = processFaceForImage(imageId)
+                if (success) parsed++
+
+                val pending = total - parsed
+                progressDataStore.updateFaceProgress(total, parsed, pending)
+                updateNotification("Face Detection", parsed, total, ProcessingStage.FACE_DETECTION)
+            }
+        }
+    }
+
+    private suspend fun processFaceForImage(mediaStoreId: Long): Boolean {
+        try {
+            val path =
+                    photoDataSource.getImagePath(mediaStoreId)
+                            ?: run {
+                                imageDao.markAsFaceParsed(mediaStoreId)
+                                return false
+                            }
+
+            // Using standard bitmap loading for face detection (not scaled down yet, need good
+            // resolution)
+            // But getScaledBitmap is safer for memory. Face detection works on scaled down images
+            // usually.
+            // FaceDetectionProcessor min face size is 0.1 ratio, so scaling down too much might
+            // miss small faces.
+            // But photoDataSource.getScaledBitmap max dimension is 1024, which is plenty for ML
+            // Kit.
+            val bitmap =
+                    photoDataSource.getScaledBitmap(path)
+                            ?: run {
+                                imageDao.markAsFaceParsed(mediaStoreId)
+                                return false
+                            }
+
+            try {
+                val faceResults = faceDetectionProcessor.processImage(bitmap)
+
+                if (faceResults.isNotEmpty()) {
+                    val entities =
+                            faceResults.map { result ->
+                                // Crop the face
+                                val croppedBitmap =
+                                        faceDetectionProcessor.cropFaceWithMargin(bitmap, result)
+                                var croppedPath = ""
+
+                                // Save cropped face to internal storage
+                                if (croppedBitmap != null) {
+                                    try {
+                                        val filename =
+                                                "face_${mediaStoreId}_${result.faceIndex}.jpg"
+                                        context.openFileOutput(filename, Context.MODE_PRIVATE)
+                                                .use { stream ->
+                                                    croppedBitmap.compress(
+                                                            android.graphics.Bitmap.CompressFormat
+                                                                    .JPEG,
+                                                            90,
+                                                            stream
+                                                    )
+                                                }
+                                        croppedPath =
+                                                context.getFileStreamPath(filename).absolutePath
+                                    } catch (e: Exception) {
+                                        // Failed to save face
+                                    }
+                                }
+
+                                FaceEntity(
+                                        mediaStoreId = mediaStoreId,
+                                        croppedFacePath = croppedPath,
+                                        boundingBoxLeft = result.left,
+                                        boundingBoxTop = result.top,
+                                        boundingBoxRight = result.right,
+                                        boundingBoxBottom = result.bottom,
+                                        faceWidth = result.width,
+                                        faceHeight = result.height,
+                                        faceIndex = result.faceIndex
+                                )
+                            }
+                    faceDao.insertFaces(entities)
+                }
+
+                imageDao.markAsFaceParsed(mediaStoreId)
+                return true
+            } finally {
+                bitmap.recycle()
+            }
+        } catch (e: Exception) {
+            return false
+        }
+    }
+
+    // ============================================================================
     // Notification Helpers
     // ============================================================================
     private fun updateNotification(
@@ -306,9 +415,10 @@ constructor(
         val progress = if (total > 0) (parsed * 100 / total) else 0
         val stageNumber =
                 when (stage) {
-                    ProcessingStage.OCR -> "1/3"
-                    ProcessingStage.BARCODE -> "2/3"
-                    ProcessingStage.LABELING -> "3/3"
+                    ProcessingStage.OCR -> "1/4"
+                    ProcessingStage.BARCODE -> "2/4"
+                    ProcessingStage.LABELING -> "3/4"
+                    ProcessingStage.FACE_DETECTION -> "4/4"
                     else -> ""
                 }
 

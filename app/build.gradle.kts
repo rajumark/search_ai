@@ -210,6 +210,9 @@ dependencies {
     // ML Kit Image Labeling
     implementation(libs.mlkit.image.labeling)
     
+    // ML Kit Face Detection
+    implementation(libs.mlkit.face.detection)
+    
     // DataStore
     implementation(libs.androidx.datastore.preferences)
     
