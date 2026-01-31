@@ -8,12 +8,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,22 +19,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material.icons.rounded.PhotoLibrary
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,16 +39,31 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+
+/**
+ * Permission types that can be requested.
+ */
+enum class PermissionType {
+    PHOTO_FULL_ACCESS,
+    NOTIFICATIONS
+}
+
+/**
+ * Permission status for each permission type.
+ */
+data class PermissionStatus(
+    val isGranted: Boolean,
+    val isPartialAccess: Boolean = false,
+    val needsSettings: Boolean = false
+)
 
 /**
  * Gets the appropriate photo permission based on API level.
@@ -77,7 +83,7 @@ private fun getNotificationPermission(): String? {
     return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         Manifest.permission.POST_NOTIFICATIONS
     } else {
-        null // No runtime permission needed below Android 13
+        null
     }
 }
 
@@ -86,322 +92,267 @@ fun PermissionScreen(
     viewModel: PermissionViewModel
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsState()
     
     val photoPermission = getPhotoPermission()
     val notificationPermission = getNotificationPermission()
     
     // Track permission states
-    var isPhotoPermissionGranted by remember { mutableStateOf(false) }
-    var isNotificationPermissionGranted by remember { mutableStateOf(false) }
+    var photoStatus by remember { mutableStateOf(PermissionStatus(isGranted = false)) }
+    var notificationStatus by remember { mutableStateOf(PermissionStatus(isGranted = false)) }
+    
+    // Function to refresh all permission states and auto-navigate if all granted
+    fun refreshPermissions() {
+        // Photo permission check
+        val isPhotoGranted = ContextCompat.checkSelfPermission(
+            context, photoPermission
+        ) == PackageManager.PERMISSION_GRANTED
+        
+        // On Android 14+, check for partial access
+        val isPartialAccess = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val partialPermission = Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
+            val hasPartial = ContextCompat.checkSelfPermission(
+                context, partialPermission
+            ) == PackageManager.PERMISSION_GRANTED
+            hasPartial && !isPhotoGranted
+        } else {
+            false
+        }
+        
+        photoStatus = PermissionStatus(
+            isGranted = isPhotoGranted,
+            isPartialAccess = isPartialAccess,
+            needsSettings = isPartialAccess
+        )
+        
+        // Notification permission check
+        notificationStatus = notificationPermission?.let {
+            PermissionStatus(
+                isGranted = ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+            )
+        } ?: PermissionStatus(isGranted = true)
+        
+        // Auto-navigate when ALL permissions are granted
+        val allPermissionsGranted = isPhotoGranted && !isPartialAccess && 
+            (notificationPermission == null || notificationStatus.isGranted)
+        
+        if (allPermissionsGranted) {
+            viewModel.onPermissionCheckResult(true)
+        }
+    }
     
     // Photo permission launcher
     val photoPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        isPhotoPermissionGranted = isGranted
-        val shouldShowRationale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            (context as? android.app.Activity)?.shouldShowRequestPermissionRationale(photoPermission) ?: false
-        } else {
-            false
+        refreshPermissions()
+        if (!isGranted) {
+            val shouldShowRationale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                (context as? android.app.Activity)?.shouldShowRequestPermissionRationale(photoPermission) ?: false
+            } else {
+                false
+            }
+            viewModel.onPermissionResult(isGranted, shouldShowRationale)
         }
-        viewModel.onPermissionResult(isGranted, shouldShowRationale)
     }
     
     // Notification permission launcher
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        isNotificationPermissionGranted = isGranted
+    ) { _ ->
+        refreshPermissions()
     }
     
     // Check initial permission states on launch
     LaunchedEffect(Unit) {
-        isPhotoPermissionGranted = ContextCompat.checkSelfPermission(
-            context, photoPermission
-        ) == PackageManager.PERMISSION_GRANTED
-        
-        isNotificationPermissionGranted = notificationPermission?.let {
-            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-        } ?: true // If no runtime permission needed, consider it granted
-        
-        viewModel.onPermissionCheckResult(isPhotoPermissionGranted)
+        refreshPermissions()
     }
     
-    // Refresh permission states when returning from settings
-    LaunchedEffect(uiState) {
-        isPhotoPermissionGranted = ContextCompat.checkSelfPermission(
-            context, photoPermission
-        ) == PackageManager.PERMISSION_GRANTED
-        
-        isNotificationPermissionGranted = notificationPermission?.let {
-            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-        } ?: true
+    // Refresh permissions when returning from settings
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                refreshPermissions()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+    
+    // Helper to open app settings
+    fun openAppSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+        }
+        context.startActivity(intent)
     }
     
     Scaffold { innerPadding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surface,
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        )
-                    )
-                )
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Header
-                Text(
-                    text = "Welcome to\nPhoto Search AI",
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = "Grant permissions to unlock the full potential of intelligent photo search",
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Spacer(modifier = Modifier.height(40.dp))
-                
-                // Photo Permission Card
-                PermissionCard(
-                    icon = Icons.Rounded.PhotoLibrary,
-                    title = "Photo Library Access",
-                    description = "Allow access to your photos so we can search and organize them using AI-powered text recognition.",
-                    isGranted = isPhotoPermissionGranted,
-                    isPermanentlyDenied = uiState is PermissionUiState.PermanentlyDenied,
-                    onGrantClick = {
-                        if (uiState is PermissionUiState.PermanentlyDenied) {
-                            // Open settings
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = Uri.fromParts("package", context.packageName, null)
-                            }
-                            context.startActivity(intent)
+            // Header
+            Text(
+                text = "Permissions",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 8.dp)
+            )
+            
+            Text(
+                text = "Photo Search AI needs these permissions to work properly",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Photo Permission Row
+            PermissionRow(
+                icon = Icons.Outlined.PhotoLibrary,
+                title = "Photos and videos",
+                subtitle = when {
+                    photoStatus.isGranted -> "Allowed"
+                    photoStatus.isPartialAccess -> "Limited access · Tap to allow all"
+                    else -> "Not allowed"
+                },
+                isChecked = photoStatus.isGranted || photoStatus.isPartialAccess,
+                onClick = {
+                    if (photoStatus.isPartialAccess || uiState is PermissionUiState.PermanentlyDenied) {
+                        openAppSettings()
+                    } else if (!photoStatus.isGranted) {
+                        photoPermissionLauncher.launch(photoPermission)
+                    }
+                },
+                onCheckedChange = { checked ->
+                    if (checked) {
+                        if (photoStatus.isPartialAccess) {
+                            openAppSettings()
                         } else {
                             photoPermissionLauncher.launch(photoPermission)
                         }
-                    },
-                    accentColor = Color(0xFF6366F1) // Indigo
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Notification Permission Card (only show on Android 13+)
-                if (notificationPermission != null) {
-                    PermissionCard(
-                        icon = Icons.Rounded.Notifications,
-                        title = "Notification Access",
-                        description = "Get notified about the indexing progress and when your photos are ready to search.",
-                        isGranted = isNotificationPermissionGranted,
-                        isPermanentlyDenied = false,
-                        onGrantClick = {
-                            notificationPermissionLauncher.launch(notificationPermission)
-                        },
-                        accentColor = Color(0xFF10B981) // Emerald
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
+                    } else {
+                        openAppSettings()
+                    }
                 }
-                
-                Spacer(modifier = Modifier.weight(1f))
-                
-                // Continue button (only enabled when photo permission is granted)
-                Button(
+            )
+            
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 56.dp),
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+            
+            // Notification Permission Row (only on Android 13+)
+            if (notificationPermission != null) {
+                PermissionRow(
+                    icon = Icons.Outlined.Notifications,
+                    title = "Notifications",
+                    subtitle = if (notificationStatus.isGranted) "Allowed" else "Not allowed",
+                    isChecked = notificationStatus.isGranted,
                     onClick = {
-                        if (isPhotoPermissionGranted) {
-                            viewModel.onPermissionCheckResult(true)
+                        if (!notificationStatus.isGranted) {
+                            notificationPermissionLauncher.launch(notificationPermission)
+                        } else {
+                            openAppSettings()
                         }
                     },
-                    enabled = isPhotoPermissionGranted,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text(
-                        text = if (isPhotoPermissionGranted) "Continue" else "Grant Photo Access to Continue",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    )
-                }
+                    onCheckedChange = { checked ->
+                        if (checked) {
+                            notificationPermissionLauncher.launch(notificationPermission)
+                        } else {
+                            openAppSettings()
+                        }
+                    }
+                )
                 
+                HorizontalDivider(
+                    modifier = Modifier.padding(start = 56.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Info text
+            Text(
+                text = "Your data stays on your device. We never upload your photos to any server.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            
+            // Partial access warning
+            if (photoStatus.isPartialAccess) {
                 Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = "You've selected \"Allow limited access\". To search all your photos, tap Photos and videos above and select \"Allow all\".",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
             }
         }
     }
 }
 
 @Composable
-private fun PermissionCard(
+private fun PermissionRow(
     icon: ImageVector,
     title: String,
-    description: String,
-    isGranted: Boolean,
-    isPermanentlyDenied: Boolean,
-    onGrantClick: () -> Unit,
-    accentColor: Color
+    subtitle: String,
+    isChecked: Boolean,
+    onClick: () -> Unit,
+    onCheckedChange: (Boolean) -> Unit
 ) {
-    val animatedAlpha by animateFloatAsState(
-        targetValue = if (isGranted) 0.7f else 1f,
-        label = "cardAlpha"
-    )
-    
-    val borderColor by animateColorAsState(
-        targetValue = if (isGranted) {
-            Color(0xFF10B981) // Green for granted
-        } else {
-            accentColor.copy(alpha = 0.3f)
-        },
-        label = "borderColor"
-    )
-    
-    val backgroundColor by animateColorAsState(
-        targetValue = if (isGranted) {
-            Color(0xFF10B981).copy(alpha = 0.08f)
-        } else {
-            MaterialTheme.colorScheme.surface
-        },
-        label = "backgroundColor"
-    )
-    
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .alpha(animatedAlpha)
-            .border(
-                width = 1.5.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(20.dp)
-            ),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isGranted) 0.dp else 4.dp
-        )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp)
+        )
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
+            modifier = Modifier.weight(1f)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Icon with gradient background
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (isGranted) {
-                                Brush.linearGradient(
-                                    colors = listOf(
-                                        Color(0xFF10B981),
-                                        Color(0xFF059669)
-                                    )
-                                )
-                            } else {
-                                Brush.linearGradient(
-                                    colors = listOf(
-                                        accentColor,
-                                        accentColor.copy(alpha = 0.7f)
-                                    )
-                                )
-                            }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (isGranted) Icons.Rounded.Check else icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp),
-                        tint = Color.White
-                    )
-                }
-                
-                Spacer(modifier = Modifier.width(16.dp))
-                
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    
-                    if (isGranted) {
-                        Text(
-                            text = "Permission Granted",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF10B981)
-                        )
-                    }
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
             Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Grant button
-            Button(
-                onClick = onGrantClick,
-                enabled = !isGranted,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isGranted) {
-                        Color(0xFF10B981)
-                    } else {
-                        accentColor
-                    },
-                    disabledContainerColor = Color(0xFF10B981).copy(alpha = 0.5f),
-                    disabledContentColor = Color.White.copy(alpha = 0.8f)
-                )
-            ) {
-                Text(
-                    text = when {
-                        isGranted -> "Already Granted"
-                        isPermanentlyDenied -> "Open Settings"
-                        else -> "Grant Permission"
-                    },
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            }
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        Switch(
+            checked = isChecked,
+            onCheckedChange = onCheckedChange
+        )
     }
 }
