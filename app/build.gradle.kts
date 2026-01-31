@@ -204,6 +204,12 @@ dependencies {
     // ML Kit Text Recognition
     implementation(libs.mlkit.text.recognition)
     
+    // ML Kit Barcode Scanning
+    implementation(libs.mlkit.barcode.scanning)
+    
+    // ML Kit Image Labeling
+    implementation(libs.mlkit.image.labeling)
+    
     // DataStore
     implementation(libs.androidx.datastore.preferences)
     

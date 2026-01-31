@@ -20,10 +20,22 @@ interface ImageDao {
     suspend fun insertImages(images: List<ImageEntity>): List<Long>
     
     /**
-     * Get IDs of unparsed images, limited to batch size.
+     * Get IDs of unparsed images (OCR not done), limited to batch size.
      */
     @Query("SELECT mediaStoreId FROM images WHERE parsed = 0 LIMIT :limit")
     suspend fun getUnparsedImageIds(limit: Int): List<Long>
+    
+    /**
+     * Get IDs of images where barcode scanning is not done, limited to batch size.
+     */
+    @Query("SELECT mediaStoreId FROM images WHERE barcodeParsed = 0 LIMIT :limit")
+    suspend fun getUnparsedBarcodeImageIds(limit: Int): List<Long>
+    
+    /**
+     * Get IDs of images where labeling is not done, limited to batch size.
+     */
+    @Query("SELECT mediaStoreId FROM images WHERE labelParsed = 0 LIMIT :limit")
+    suspend fun getUnparsedLabelImageIds(limit: Int): List<Long>
     
     /**
      * Get image by mediaStoreId.
@@ -32,16 +44,40 @@ interface ImageDao {
     suspend fun getImageById(id: Long): ImageEntity?
     
     /**
-     * Mark an image as parsed.
+     * Mark an image as OCR parsed.
      */
     @Query("UPDATE images SET parsed = 1 WHERE mediaStoreId = :id")
     suspend fun markAsParsed(id: Long): Int
     
     /**
-     * Get count of parsed images as Flow for live updates.
+     * Mark an image as barcode parsed.
+     */
+    @Query("UPDATE images SET barcodeParsed = 1 WHERE mediaStoreId = :id")
+    suspend fun markAsBarcodeParsed(id: Long): Int
+    
+    /**
+     * Mark an image as label parsed.
+     */
+    @Query("UPDATE images SET labelParsed = 1 WHERE mediaStoreId = :id")
+    suspend fun markAsLabelParsed(id: Long): Int
+    
+    /**
+     * Get count of OCR parsed images as Flow for live updates.
      */
     @Query("SELECT COUNT(*) FROM images WHERE parsed = 1")
     fun getParsedCountFlow(): Flow<Int>
+    
+    /**
+     * Get count of barcode parsed images as Flow.
+     */
+    @Query("SELECT COUNT(*) FROM images WHERE barcodeParsed = 1")
+    fun getBarcodeParsedCountFlow(): Flow<Int>
+    
+    /**
+     * Get count of label parsed images as Flow.
+     */
+    @Query("SELECT COUNT(*) FROM images WHERE labelParsed = 1")
+    fun getLabelParsedCountFlow(): Flow<Int>
     
     /**
      * Get total image count as Flow for live updates.
@@ -50,10 +86,22 @@ interface ImageDao {
     fun getTotalCountFlow(): Flow<Int>
     
     /**
-     * Get count of unparsed images as Flow.
+     * Get count of OCR unparsed images as Flow.
      */
     @Query("SELECT COUNT(*) FROM images WHERE parsed = 0")
     fun getPendingCountFlow(): Flow<Int>
+    
+    /**
+     * Get count of barcode unparsed images as Flow.
+     */
+    @Query("SELECT COUNT(*) FROM images WHERE barcodeParsed = 0")
+    fun getBarcodePendingCountFlow(): Flow<Int>
+    
+    /**
+     * Get count of label unparsed images as Flow.
+     */
+    @Query("SELECT COUNT(*) FROM images WHERE labelParsed = 0")
+    fun getLabelPendingCountFlow(): Flow<Int>
     
     /**
      * Get all parsed image IDs for sync check.
@@ -84,5 +132,12 @@ interface ImageDao {
      */
     @Query("DELETE FROM images WHERE mediaStoreId IN (:ids)")
     suspend fun deleteImagesByIds(ids: List<Long>): Int
+    
+    /**
+     * Get count of fully processed images (all stages done).
+     */
+    @Query("SELECT COUNT(*) FROM images WHERE parsed = 1 AND barcodeParsed = 1 AND labelParsed = 1")
+    fun getFullyProcessedCountFlow(): Flow<Int>
 }
+
 

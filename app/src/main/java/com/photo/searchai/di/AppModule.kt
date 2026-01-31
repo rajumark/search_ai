@@ -6,9 +6,13 @@ import androidx.room.Room
 import androidx.work.WorkManager
 import com.photo.searchai.data.datastore.OcrProgressDataStore
 import com.photo.searchai.data.local.AppDatabase
+import com.photo.searchai.data.local.dao.BarcodeDao
 import com.photo.searchai.data.local.dao.ImageDao
+import com.photo.searchai.data.local.dao.ImageLabelDao
 import com.photo.searchai.data.local.dao.OcrTextDao
 import com.photo.searchai.datasource.PhotoDataSource
+import com.photo.searchai.ocr.BarcodeProcessor
+import com.photo.searchai.ocr.ImageLabelProcessor
 import com.photo.searchai.ocr.OcrProcessor
 import com.photo.searchai.repository.OcrRepository
 import com.photo.searchai.repository.OcrRepositoryImpl
@@ -44,7 +48,7 @@ object AppModule {
         return PhotoRepositoryImpl(photoDataSource)
     }
     
-    // Room Database
+    // Room Database with migration
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
@@ -52,7 +56,9 @@ object AppModule {
             context,
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME
-        ).build()
+        )
+            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .build()
     }
     
     @Provides
@@ -65,6 +71,18 @@ object AppModule {
     @Singleton
     fun provideOcrTextDao(database: AppDatabase): OcrTextDao {
         return database.ocrTextDao()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideBarcodeDao(database: AppDatabase): BarcodeDao {
+        return database.barcodeDao()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideImageLabelDao(database: AppDatabase): ImageLabelDao {
+        return database.imageLabelDao()
     }
     
     // DataStore
@@ -87,11 +105,23 @@ object AppModule {
         return WorkManagerHelper(context)
     }
     
-    // OCR
+    // ML Kit Processors
     @Provides
     @Singleton
     fun provideOcrProcessor(): OcrProcessor {
         return OcrProcessor()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideBarcodeProcessor(): BarcodeProcessor {
+        return BarcodeProcessor()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideImageLabelProcessor(): ImageLabelProcessor {
+        return ImageLabelProcessor()
     }
     
     // OCR Repository
@@ -113,4 +143,5 @@ object AppModule {
         )
     }
 }
+
 

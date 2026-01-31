@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.TextSnippet
 import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.Menu
@@ -138,14 +139,10 @@ fun HomeScreen(
                 )
             },
             bottomBar = {
-                // Bottom Progress Ribbon with navigation bar padding
-                ProgressRibbon(
+                // Multi-stage Progress Ribbon with navigation bar padding
+                MultiStageProgressRibbon(
                     show = uiState.showProgressRibbon,
-                    pendingCount = uiState.pendingImages,
-                    progress = uiState.sessionProgress,
-                    percentage = uiState.sessionPercentage,
-                    estimatedTimeSeconds = uiState.estimatedTimeRemainingSeconds,
-                    isIndexing = uiState.isIndexing
+                    uiState = uiState
                 )
             }
         ) { innerPadding ->
@@ -432,21 +429,22 @@ private fun DrawerMenuItem(
 }
 
 /**
- * Compact bottom ribbon showing OCR progress with proper system UI insets.
+ * Beautiful multi-stage progress ribbon showing OCR, Barcode, and Label progress.
+ * Features:
+ * - Three stage indicators with icons
+ * - Active stage highlighting with animation
+ * - Overall progress bar
+ * - Estimated time remaining
  */
 @Composable
-private fun ProgressRibbon(
+private fun MultiStageProgressRibbon(
     show: Boolean,
-    pendingCount: Int,
-    progress: Float,
-    percentage: Int,
-    estimatedTimeSeconds: Long,
-    isIndexing: Boolean
+    uiState: HomeUiState
 ) {
-    val animatedProgress by animateFloatAsState(
-        targetValue = progress,
+    val animatedOverallProgress by animateFloatAsState(
+        targetValue = uiState.overallProgress,
         animationSpec = tween(durationMillis = 300),
-        label = "progress"
+        label = "overallProgress"
     )
     
     AnimatedVisibility(
@@ -464,94 +462,227 @@ private fun ProgressRibbon(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-            shape = RoundedCornerShape(16.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            shape = RoundedCornerShape(20.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
+                    .padding(16.dp)
             ) {
-                // Top row: Icon, Title, and Stats
+                // Header row with title and overall percentage
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Animated scanning icon
-                        if (isIndexing) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (uiState.isProcessing) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(20.dp),
                                 strokeWidth = 2.dp,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         } else {
                             Icon(
-                                imageVector = Icons.Rounded.DocumentScanner,
+                                imageVector = Icons.Rounded.CameraAlt,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(20.dp),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
-                        
                         Spacer(modifier = Modifier.width(10.dp))
-                        
                         Column {
                             Text(
-                                text = "Finding text in new photos",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                text = "Processing Photos",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "$pendingCount pending",
+                                text = uiState.statusText,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                     
-                    // Percentage and ETA
-                    Column(
-                        horizontalAlignment = Alignment.End
+                    // Overall percentage badge
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = "$percentage%",
+                            text = "${uiState.overallPercentage}%",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                         )
-                        if (estimatedTimeSeconds > 0) {
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Three stage progress indicators
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StageIndicator(
+                        icon = Icons.AutoMirrored.Rounded.TextSnippet,
+                        stageProgress = uiState.ocrProgress,
+                        stageNumber = "1"
+                    )
+                    StageIndicator(
+                        icon = Icons.Rounded.QrCodeScanner,
+                        stageProgress = uiState.barcodeProgress,
+                        stageNumber = "2"
+                    )
+                    StageIndicator(
+                        icon = Icons.Rounded.Face,
+                        stageProgress = uiState.labelProgress,
+                        stageNumber = "3"
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Overall progress bar
+                Column {
+                    LinearProgressIndicator(
+                        progress = { animatedOverallProgress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        strokeCap = StrokeCap.Round
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Stats row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "${uiState.totalPending} remaining",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (uiState.estimatedTimeRemainingSeconds > 0) {
                             Text(
-                                text = formatEstimatedTime(estimatedTimeSeconds),
+                                text = formatEstimatedTime(uiState.estimatedTimeRemainingSeconds),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                // Progress bar
-                LinearProgressIndicator(
-                    progress = { animatedProgress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp)),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
-                    strokeCap = StrokeCap.Round
-                )
             }
+        }
+    }
+}
+
+/**
+ * Individual stage indicator with icon and progress.
+ */
+@Composable
+private fun StageIndicator(
+    icon: ImageVector,
+    stageProgress: StageProgress,
+    stageNumber: String
+) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = stageProgress.progress,
+        animationSpec = tween(durationMillis = 300),
+        label = "stageProgress"
+    )
+    
+    val containerColor = when {
+        stageProgress.isComplete -> MaterialTheme.colorScheme.primaryContainer
+        stageProgress.isActive -> MaterialTheme.colorScheme.tertiaryContainer
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    
+    val contentColor = when {
+        stageProgress.isComplete -> MaterialTheme.colorScheme.onPrimaryContainer
+        stageProgress.isActive -> MaterialTheme.colorScheme.onTertiaryContainer
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(100.dp)
+    ) {
+        // Stage badge
+        Box(contentAlignment = Alignment.Center) {
+            // Background circle
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = RoundedCornerShape(50),
+                color = containerColor
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    if (stageProgress.isActive && !stageProgress.isComplete) {
+                        // Show progress ring when active
+                        CircularProgressIndicator(
+                            progress = { animatedProgress },
+                            modifier = Modifier.size(48.dp),
+                            strokeWidth = 3.dp,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            trackColor = MaterialTheme.colorScheme.tertiaryContainer
+                        )
+                    }
+                    Icon(
+                        imageVector = if (stageProgress.isComplete) Icons.Rounded.Check else icon,
+                        contentDescription = stageProgress.name,
+                        modifier = Modifier.size(24.dp),
+                        tint = contentColor
+                    )
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Stage name
+        Text(
+            text = stageProgress.name,
+            style = MaterialTheme.typography.labelSmall,
+            color = contentColor,
+            fontWeight = if (stageProgress.isActive) FontWeight.Bold else FontWeight.Normal,
+            maxLines = 1
+        )
+        
+        // Stage progress or check
+        if (stageProgress.isComplete) {
+            Text(
+                text = "Done",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium
+            )
+        } else if (stageProgress.isActive) {
+            Text(
+                text = "${stageProgress.percentage}%",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.tertiary,
+                fontWeight = FontWeight.Bold
+            )
+        } else {
+            Text(
+                text = "Waiting",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
         }
     }
 }

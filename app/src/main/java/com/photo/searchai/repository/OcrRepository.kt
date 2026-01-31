@@ -17,8 +17,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Repository for OCR operations.
- * Handles syncing MediaStore images to Room and triggering OCR work.
+ * Repository for OCR and image processing operations.
+ * Handles syncing MediaStore images to Room and triggering processing work.
  */
 interface OcrRepository {
     /**
@@ -27,28 +27,26 @@ interface OcrRepository {
      */
     suspend fun syncImagesFromMediaStore()
     
-    /**
-     * Get parsed count as Flow.
-     */
+    // OCR Progress Flows
     fun getParsedCountFlow(): Flow<Int>
-    
-    /**
-     * Get total count as Flow.
-     */
     fun getTotalCountFlow(): Flow<Int>
-    
-    /**
-     * Get pending count as Flow.
-     */
     fun getPendingCountFlow(): Flow<Int>
     
+    // Barcode Progress Flows
+    fun getBarcodeParsedCountFlow(): Flow<Int>
+    fun getBarcodePendingCountFlow(): Flow<Int>
+    
+    // Label Progress Flows
+    fun getLabelParsedCountFlow(): Flow<Int>
+    fun getLabelPendingCountFlow(): Flow<Int>
+    
     /**
-     * Get progress from DataStore as Flow.
+     * Get full progress from DataStore as Flow.
      */
     fun getProgressFlow(): Flow<OcrProgress>
     
     /**
-     * Enqueue OCR work if there are pending images.
+     * Enqueue processing work if there are pending images.
      */
     suspend fun enqueueOcrWorkIfNeeded()
     
@@ -124,7 +122,9 @@ class OcrRepositoryImpl @Inject constructor(
                     mediaStoreId = metadata.mediaStoreId,
                     path = metadata.path,
                     dateAdded = metadata.dateAdded,
-                    parsed = false
+                    parsed = false,
+                    barcodeParsed = false,
+                    labelParsed = false
                 )
             }
             imageDao.insertImages(entities)
@@ -138,22 +138,46 @@ class OcrRepositoryImpl @Inject constructor(
         
         // Update progress in DataStore
         val total = imageDao.getTotalCountFlow().first()
-        val parsed = imageDao.getParsedCountFlow().first()
-        val pending = total - parsed
-        progressDataStore.updateProgress(total, parsed, pending)
+        val ocrParsed = imageDao.getParsedCountFlow().first()
+        val ocrPending = total - ocrParsed
+        val barcodeParsed = imageDao.getBarcodeParsedCountFlow().first()
+        val barcodePending = total - barcodeParsed
+        val labelParsed = imageDao.getLabelParsedCountFlow().first()
+        val labelPending = total - labelParsed
+        
+        progressDataStore.updateAllProgress(
+            total = total,
+            ocrParsed = ocrParsed,
+            ocrPending = ocrPending,
+            barcodeParsed = barcodeParsed,
+            barcodePending = barcodePending,
+            labelParsed = labelParsed,
+            labelPending = labelPending,
+            currentStage = com.photo.searchai.data.datastore.ProcessingStage.IDLE
+        )
     }
     
+    // OCR Progress
     override fun getParsedCountFlow(): Flow<Int> = imageDao.getParsedCountFlow()
-    
     override fun getTotalCountFlow(): Flow<Int> = imageDao.getTotalCountFlow()
-    
     override fun getPendingCountFlow(): Flow<Int> = imageDao.getPendingCountFlow()
+    
+    // Barcode Progress
+    override fun getBarcodeParsedCountFlow(): Flow<Int> = imageDao.getBarcodeParsedCountFlow()
+    override fun getBarcodePendingCountFlow(): Flow<Int> = imageDao.getBarcodePendingCountFlow()
+    
+    // Label Progress
+    override fun getLabelParsedCountFlow(): Flow<Int> = imageDao.getLabelParsedCountFlow()
+    override fun getLabelPendingCountFlow(): Flow<Int> = imageDao.getLabelPendingCountFlow()
     
     override fun getProgressFlow(): Flow<OcrProgress> = progressDataStore.progressFlow
     
     override suspend fun enqueueOcrWorkIfNeeded() {
-        val pending = imageDao.getPendingCountFlow().first()
-        if (pending > 0) {
+        val ocrPending = imageDao.getPendingCountFlow().first()
+        val barcodePending = imageDao.getBarcodePendingCountFlow().first()
+        val labelPending = imageDao.getLabelPendingCountFlow().first()
+        
+        if (ocrPending > 0 || barcodePending > 0 || labelPending > 0) {
             workManagerHelper.enqueueOcrWork()
         }
     }
@@ -202,4 +226,5 @@ class OcrRepositoryImpl @Inject constructor(
         imageDao.deleteImagesByIds(ids)
     }
 }
+
 
