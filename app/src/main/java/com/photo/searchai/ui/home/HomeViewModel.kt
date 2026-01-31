@@ -87,10 +87,19 @@ class HomeViewModel @Inject constructor(private val ocrRepository: OcrRepository
                 val overallProgress = if (totalWork > 0) completedWork.toFloat() / totalWork else 0f
                 val overallPercentage = (overallProgress * 100).toInt()
 
+                // Use actual stage from DataStore when work is running
+                // This prevents UI showing wrong stage when new images are added mid-processing
                 val currentStage =
                         when {
                             !isRunning && totalPending == 0 && total > 0 -> ProcessingStage.COMPLETE
                             !isRunning -> ProcessingStage.IDLE
+                            // When running, trust the actual stage from the worker
+                            progress.currentStage == ProcessingStage.LABELING ->
+                                    ProcessingStage.LABELING
+                            progress.currentStage == ProcessingStage.BARCODE ->
+                                    ProcessingStage.BARCODE
+                            progress.currentStage == ProcessingStage.OCR -> ProcessingStage.OCR
+                            // Fallback to checking pending counts if DataStore stage is stale
                             ocrPending > 0 -> ProcessingStage.OCR
                             barcodePending > 0 -> ProcessingStage.BARCODE
                             labelPending > 0 -> ProcessingStage.LABELING
