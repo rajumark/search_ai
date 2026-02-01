@@ -33,6 +33,7 @@ import com.photo.searchai.feature.storage_cleanup.StorageCleanupScreen
 import com.photo.searchai.feature.storage_cleanup.StorageCleanupViewModel
 import com.photo.searchai.feature.media_vault.MediaVaultScreen
 import com.photo.searchai.feature.media_vault.MediaVaultViewModel
+import com.photo.searchai.feature.onboarding.OnboardingScreen
 
 @Composable
 fun NavGraph(
@@ -166,6 +167,21 @@ fun NavGraph(
             val viewModel: MediaVaultViewModel = hiltViewModel()
             MediaVaultScreen(
                 viewModel = viewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(NavRoutes.Onboarding.route) {
+            OnboardingScreen(
+                onAgreeClick = {
+                    if (navController.previousBackStackEntry != null) {
+                        navController.popBackStack()
+                    } else {
+                        navController.navigate(NavRoutes.Home.route) {
+                            popUpTo(NavRoutes.Onboarding.route) { inclusive = true }
+                        }
+                    }
+                },
                 onBackClick = { navController.popBackStack() }
             )
         }

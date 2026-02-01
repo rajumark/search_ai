@@ -93,7 +93,8 @@ fun HomeScreen(
         onNavigateToGalleryInsights: () -> Unit = {},
         onNavigateToSmartAlbums: () -> Unit = {},
         onNavigateToStorageCleanup: () -> Unit = {},
-        onNavigateToMediaVault: () -> Unit = {}
+        onNavigateToMediaVault: () -> Unit = {},
+        onNavigateToOnboarding: () -> Unit = {}
 ) {
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -144,6 +145,10 @@ fun HomeScreen(
                                 onNavigateToMediaVault = {
                                         scope.launch { drawerState.close() }
                                         onNavigateToMediaVault()
+                                },
+                                onNavigateToOnboarding = {
+                                        scope.launch { drawerState.close() }
+                                        onNavigateToOnboarding()
                                 }
                         )
                 }
@@ -963,7 +968,8 @@ private fun CenterContent(totalImages: Int, parsedImages: Int, onOpenDrawer: () 
         onNavigateToGalleryInsights: () -> Unit,
         onNavigateToSmartAlbums: () -> Unit,
         onNavigateToStorageCleanup: () -> Unit,
-        onNavigateToMediaVault: () -> Unit
+        onNavigateToMediaVault: () -> Unit,
+        onNavigateToOnboarding: () -> Unit
 ) {
         ModalDrawerSheet(modifier = Modifier.width(300.dp)) {
                 Column(
@@ -1110,6 +1116,14 @@ private fun CenterContent(totalImages: Int, parsedImages: Int, onOpenDrawer: () 
                         subtitle = "Configure background access",
                         enabled = true,
                         onClick = onNavigateToBatterySettings
+                )
+
+                DrawerMenuItem(
+                        icon = Icons.Rounded.Info,
+                        label = "App Onboarding",
+                        subtitle = "Review app features",
+                        enabled = true,
+                        onClick = onNavigateToOnboarding
                 )
         }
 }
