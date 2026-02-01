@@ -4,13 +4,13 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.photo.searchai.data.local.dao.BarcodeDao
+import com.photo.searchai.core.database.dao.BarcodeDao
+import com.photo.searchai.core.database.entity.BarcodeEntity
 import com.photo.searchai.data.local.dao.FaceDao
 import com.photo.searchai.data.local.dao.ImageDao
 import com.photo.searchai.data.local.dao.ImageLabelDao
 import com.photo.searchai.data.local.dao.OcrTextDao
 import com.photo.searchai.data.local.dao.WorkerHistoryDao
-import com.photo.searchai.data.local.entity.BarcodeEntity
 import com.photo.searchai.data.local.entity.FaceEntity
 import com.photo.searchai.data.local.entity.ImageEntity
 import com.photo.searchai.data.local.entity.ImageLabelEntity

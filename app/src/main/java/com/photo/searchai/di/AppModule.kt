@@ -7,7 +7,6 @@ import androidx.work.WorkManager
 import com.photo.searchai.data.datastore.OcrProgressDataStore
 import com.photo.searchai.data.datastore.ScheduledWorkDataStore
 import com.photo.searchai.data.local.AppDatabase
-import com.photo.searchai.data.local.dao.BarcodeDao
 import com.photo.searchai.data.local.dao.FaceDao
 import com.photo.searchai.data.local.dao.ImageDao
 import com.photo.searchai.data.local.dao.ImageLabelDao
@@ -16,7 +15,6 @@ import com.photo.searchai.data.local.dao.WorkerHistoryDao
 import com.photo.searchai.datasource.PhotoDataSource
 import com.photo.searchai.feature.battery.BatteryOptimizationHelper
 import com.photo.searchai.feature.battery.BatteryOptimizationPreferences
-import com.photo.searchai.ocr.BarcodeProcessor
 import com.photo.searchai.ocr.FaceDetectionProcessor
 import com.photo.searchai.ocr.ImageLabelProcessor
 import com.photo.searchai.ocr.OcrProcessor
@@ -79,12 +77,6 @@ object AppModule {
     @Singleton
     fun provideOcrTextDao(database: AppDatabase): OcrTextDao {
         return database.ocrTextDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideBarcodeDao(database: AppDatabase): BarcodeDao {
-        return database.barcodeDao()
     }
 
     @Provides
@@ -155,12 +147,6 @@ object AppModule {
     @Singleton
     fun provideOcrProcessor(): OcrProcessor {
         return OcrProcessor()
-    }
-
-    @Provides
-    @Singleton
-    fun provideBarcodeProcessor(): BarcodeProcessor {
-        return BarcodeProcessor()
     }
 
     @Provides

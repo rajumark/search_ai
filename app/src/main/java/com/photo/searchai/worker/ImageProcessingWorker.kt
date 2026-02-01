@@ -22,11 +22,11 @@ import com.photo.searchai.core.database.entity.FaceEntity
 import com.photo.searchai.core.database.entity.ImageLabelEntity
 import com.photo.searchai.core.database.entity.ImageQualityEntity
 import com.photo.searchai.core.database.entity.OcrTextEntity
+import com.photo.searchai.core.ml.BarcodeProcessor
 import com.photo.searchai.core.opencv.ImageQualityAnalyzer
 import com.photo.searchai.data.datastore.OcrProgressDataStore
 import com.photo.searchai.data.datastore.ProcessingStage
 import com.photo.searchai.datasource.PhotoDataSource
-import com.photo.searchai.ocr.BarcodeProcessor
 import com.photo.searchai.ocr.FaceDetectionProcessor
 import com.photo.searchai.ocr.ImageLabelProcessor
 import com.photo.searchai.ocr.OcrProcessor

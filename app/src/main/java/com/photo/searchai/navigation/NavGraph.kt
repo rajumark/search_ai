@@ -10,6 +10,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.photo.searchai.feature.barcode.BarcodePhotosScreen
 import com.photo.searchai.feature.battery.BatteryOptimizationScreen
 import com.photo.searchai.feature.gallery_insights.GalleryInsightsScreen
 import com.photo.searchai.feature.gallery_insights.GalleryInsightsViewModel
@@ -28,7 +29,6 @@ import com.photo.searchai.ui.home.HomeViewModel
 import com.photo.searchai.ui.permission.NavigationEvent
 import com.photo.searchai.ui.permission.PermissionScreen
 import com.photo.searchai.ui.permission.PermissionViewModel
-import com.photo.searchai.ui.screens.BarcodePhotosScreen
 import com.photo.searchai.ui.screens.DocumentScannerScreen
 import com.photo.searchai.ui.screens.FaceSearchScreen
 import com.photo.searchai.ui.screens.FaceSearchViewModel
