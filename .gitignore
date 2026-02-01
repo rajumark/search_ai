@@ -48,3 +48,8 @@ feature/permission/build
 feature/search/build
 feature/smart_albums/build
 feature/storage_cleanup/build
+core/rules_engine/build
+core/work/build
+core/metadata_index/build
+core/rules_engine/build
+feature/onboarding/build

@@ -20,6 +20,7 @@ import com.photo.searchai.core.database.dao.ImageLabelDao
 import com.photo.searchai.core.database.dao.ImageQualityDao
 import com.photo.searchai.core.database.dao.OcrTextDao
 import com.photo.searchai.core.database.entity.BarcodeEntity
+import com.photo.searchai.core.database.entity.FaceEntity
 import com.photo.searchai.core.database.entity.ImageLabelEntity
 import com.photo.searchai.core.database.entity.ImageQualityEntity
 import com.photo.searchai.core.database.entity.OcrTextEntity

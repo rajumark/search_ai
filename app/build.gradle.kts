@@ -247,6 +247,7 @@ dependencies {
     implementation(project(":feature:smart_albums"))
     implementation(project(":feature:storage_cleanup"))
     implementation(project(":feature:media_vault"))
+    implementation(project(":feature:onboarding"))
 
     // Testing
     testImplementation(libs.junit)

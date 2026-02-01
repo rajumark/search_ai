@@ -114,6 +114,8 @@ class HomeViewModel @Inject constructor(private val ocrRepository: OcrRepository
                             ProcessingStage.COMPLETE -> "All processing complete"
                             ProcessingStage.IDLE ->
                                     if (total > 0) "Ready to search" else "No images found"
+                            ProcessingStage.FACE_DETECTION -> "Detecting faces…"
+                            ProcessingStage.QUALITY_ANALYSIS -> "Analyzing image quality…"
                         }
 
                 val benchmarkData = progress.benchmarkData

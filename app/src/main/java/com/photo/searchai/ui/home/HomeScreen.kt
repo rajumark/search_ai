@@ -26,11 +26,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.TextSnippet
 import androidx.compose.material.icons.rounded.Analytics
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.PhotoFilter
 import androidx.compose.material.icons.rounded.PowerSettingsNew
@@ -58,10 +62,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
-import androidx.compose.material.icons.rounded.CleaningServices
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Collections
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -75,9 +75,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.photo.searchai.data.datastore.BenchmarkData
-import com.photo.searchai.data.datastore.ProcessingStage
-import com.photo.searchai.ui.home.StageProgress
-import com.photo.searchai.ui.home.HomeUiState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -234,7 +231,7 @@ fun HomeScreen(
                                                         averageTimePerImageMs =
                                                                 uiState.averageTimePerImageMs
                                                 )
-                                                
+
                                                 ProcessingCard(
                                                         icon = Icons.Rounded.PhotoFilter,
                                                         title = "Quality Analysis",
@@ -246,19 +243,23 @@ fun HomeScreen(
 
                                                 Text(
                                                         text = "Insights & Tools",
-                                                        style = MaterialTheme.typography.titleMedium,
+                                                        style =
+                                                                MaterialTheme.typography
+                                                                        .titleMedium,
                                                         fontWeight = FontWeight.Bold,
                                                         modifier = Modifier.padding(top = 8.dp)
                                                 )
 
                                                 Row(
                                                         modifier = Modifier.fillMaxWidth(),
-                                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                                        horizontalArrangement =
+                                                                Arrangement.spacedBy(12.dp)
                                                 ) {
                                                         QuickActionCard(
                                                                 title = "Insights",
                                                                 icon = Icons.Rounded.Analytics,
-                                                                onClick = onNavigateToGalleryInsights,
+                                                                onClick =
+                                                                        onNavigateToGalleryInsights,
                                                                 modifier = Modifier.weight(1f)
                                                         )
                                                         QuickActionCard(
@@ -271,12 +272,16 @@ fun HomeScreen(
 
                                                 Row(
                                                         modifier = Modifier.fillMaxWidth(),
-                                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                                        horizontalArrangement =
+                                                                Arrangement.spacedBy(12.dp)
                                                 ) {
                                                         QuickActionCard(
                                                                 title = "Cleanup",
-                                                                icon = Icons.Rounded.CleaningServices,
-                                                                onClick = onNavigateToStorageCleanup,
+                                                                icon =
+                                                                        Icons.Rounded
+                                                                                .CleaningServices,
+                                                                onClick =
+                                                                        onNavigateToStorageCleanup,
                                                                 modifier = Modifier.weight(1f)
                                                         )
                                                         QuickActionCard(
@@ -962,6 +967,12 @@ private fun CenterContent(totalImages: Int, parsedImages: Int, onOpenDrawer: () 
 }
 
 @Composable
+private fun NavigationDrawerContent(
+        totalImages: Int,
+        parsedImages: Int,
+        onNavigateToSearch: () -> Unit,
+        onNavigateToFaceSearch: () -> Unit,
+        onNavigateToBarcodePhotos: () -> Unit,
         onNavigateToScanner: () -> Unit,
         onNavigateToRefreshHistory: () -> Unit,
         onNavigateToBatterySettings: () -> Unit,
@@ -1454,9 +1465,10 @@ private fun QuickActionCard(
                 onClick = onClick,
                 modifier = modifier.height(110.dp),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
+                colors =
+                        CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
                 Column(
@@ -1465,7 +1477,10 @@ private fun QuickActionCard(
                         verticalArrangement = Arrangement.Center
                 ) {
                         Surface(
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                color =
+                                        MaterialTheme.colorScheme.primaryContainer.copy(
+                                                alpha = 0.4f
+                                        ),
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.size(40.dp)
                         ) {
@@ -1478,9 +1493,9 @@ private fun QuickActionCard(
                                         )
                                 }
                         }
-                        
+
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         Text(
                                 text = title,
                                 style = MaterialTheme.typography.labelLarge,

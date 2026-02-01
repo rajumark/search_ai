@@ -12,40 +12,42 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/**
- * Worker responsible for syncing the local database with MediaStore.
- */
+/** Worker responsible for syncing the local database with MediaStore. */
 @HiltWorker
-class MediaSyncWorker @AssistedInject constructor(
-    @Assisted context: Context,
-    @Assisted workerParams: WorkerParameters,
-    private val mediaStoreIndexer: MediaStoreIndexer,
-    private val imageDao: ImageDao
+class MediaSyncWorker
+@AssistedInject
+constructor(
+        @Assisted context: Context,
+        @Assisted workerParams: WorkerParameters,
+        private val mediaStoreIndexer: MediaStoreIndexer,
+        private val imageDao: ImageDao
 ) : CoroutineWorker(context, workerParams) {
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        try {
-            val mediaItems = mediaStoreIndexer.getAllMedia()
-            val existingIds = imageDao.getAllMediaStoreIds().toSet()
+    override suspend fun doWork(): Result =
+            withContext(Dispatchers.IO) {
+                try {
+                    val mediaItems = mediaStoreIndexer.getAllMedia()
+                    val existingIds = imageDao.getAllImageIds().toSet()
 
-            val newEntities = mediaItems.filter { it.id !in existingIds }.map {
-                ImageEntity(
-                    mediaStoreId = it.id,
-                    path = it.path,
-                    dateAdded = it.dateAdded
-                )
+                    val newEntities =
+                            mediaItems.filter { it.id !in existingIds }.map {
+                                ImageEntity(
+                                        mediaStoreId = it.id,
+                                        path = it.path,
+                                        dateAdded = it.dateAdded
+                                )
+                            }
+
+                    if (newEntities.isNotEmpty()) {
+                        imageDao.insertImages(newEntities)
+                    }
+
+                    // Optional: Handle deleted items by checking MediaStore vs DB
+                    // But for now, we'll focus on adding new items.
+
+                    Result.success()
+                } catch (e: Exception) {
+                    Result.retry()
+                }
             }
-
-            if (newEntities.isNotEmpty()) {
-                imageDao.insertImages(newEntities)
-            }
-
-            // Optional: Handle deleted items by checking MediaStore vs DB
-            // But for now, we'll focus on adding new items.
-
-            Result.success()
-        } catch (e: Exception) {
-            Result.retry()
-        }
-    }
 }

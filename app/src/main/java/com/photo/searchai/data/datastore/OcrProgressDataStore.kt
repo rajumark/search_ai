@@ -21,6 +21,7 @@ enum class ProcessingStage {
     BARCODE,
     LABELING,
     FACE_DETECTION,
+    QUALITY_ANALYSIS,
     COMPLETE
 }
 
@@ -81,15 +82,17 @@ data class ProcessingProgress(
         val labelPending: Int = 0,
         val faceParsed: Int = 0,
         val facePending: Int = 0,
+        val qualityParsed: Int = 0,
+        val qualityPending: Int = 0,
         val currentStage: ProcessingStage = ProcessingStage.IDLE,
         val lastUpdated: Long = 0,
         val benchmarkData: BenchmarkData = BenchmarkData()
 ) {
     val overallProgress: Float
         get() {
-            val totalWork = totalImages * 4 // 4 stages now
+            val totalWork = totalImages * 5 // 5 stages now
             if (totalWork <= 0) return 0f
-            val completedWork = ocrParsed + barcodeParsed + labelParsed + faceParsed
+            val completedWork = ocrParsed + barcodeParsed + labelParsed + faceParsed + qualityParsed
             return completedWork.toFloat() / totalWork
         }
 
@@ -105,13 +108,17 @@ data class ProcessingProgress(
     val faceProgress: Float
         get() = if (totalImages > 0) faceParsed.toFloat() / totalImages else 0f
 
+    val qualityProgress: Float
+        get() = if (totalImages > 0) qualityParsed.toFloat() / totalImages else 0f
+
     val isComplete: Boolean
         get() =
                 totalImages > 0 &&
                         ocrPending == 0 &&
                         barcodePending == 0 &&
                         labelPending == 0 &&
-                        facePending == 0
+                        facePending == 0 &&
+                        qualityPending == 0
 
     val isProcessing: Boolean
         get() = currentStage != ProcessingStage.IDLE && currentStage != ProcessingStage.COMPLETE
@@ -130,6 +137,8 @@ class OcrProgressDataStore @Inject constructor(private val context: Context) {
         val LABEL_PENDING = intPreferencesKey("label_pending")
         val FACE_PARSED = intPreferencesKey("face_parsed")
         val FACE_PENDING = intPreferencesKey("face_pending")
+        val QUALITY_PARSED = intPreferencesKey("quality_parsed")
+        val QUALITY_PENDING = intPreferencesKey("quality_pending")
         val CURRENT_STAGE = stringPreferencesKey("current_stage")
         val LAST_UPDATED = longPreferencesKey("last_updated")
         val PARSED_IMAGES = intPreferencesKey("parsed_images")
@@ -159,6 +168,8 @@ class OcrProgressDataStore @Inject constructor(private val context: Context) {
                         labelPending = preferences[Keys.LABEL_PENDING] ?: 0,
                         faceParsed = preferences[Keys.FACE_PARSED] ?: 0,
                         facePending = preferences[Keys.FACE_PENDING] ?: 0,
+                        qualityParsed = preferences[Keys.QUALITY_PARSED] ?: 0,
+                        qualityPending = preferences[Keys.QUALITY_PENDING] ?: 0,
                         currentStage =
                                 try {
                                     ProcessingStage.valueOf(
@@ -239,6 +250,15 @@ class OcrProgressDataStore @Inject constructor(private val context: Context) {
         }
     }
 
+    suspend fun updateQualityProgress(total: Int, parsed: Int, pending: Int) {
+        context.progressDataStore.edit { preferences ->
+            preferences[Keys.TOTAL_IMAGES] = total
+            preferences[Keys.QUALITY_PARSED] = parsed
+            preferences[Keys.QUALITY_PENDING] = pending
+            preferences[Keys.LAST_UPDATED] = System.currentTimeMillis()
+        }
+    }
+
     suspend fun updateCurrentStage(stage: ProcessingStage) {
         context.progressDataStore.edit { preferences ->
             preferences[Keys.CURRENT_STAGE] = stage.name
@@ -256,6 +276,8 @@ class OcrProgressDataStore @Inject constructor(private val context: Context) {
             labelPending: Int,
             faceParsed: Int,
             facePending: Int,
+            qualityParsed: Int,
+            qualityPending: Int,
             currentStage: ProcessingStage
     ) {
         context.progressDataStore.edit { preferences ->
@@ -268,6 +290,8 @@ class OcrProgressDataStore @Inject constructor(private val context: Context) {
             preferences[Keys.LABEL_PENDING] = labelPending
             preferences[Keys.FACE_PARSED] = faceParsed
             preferences[Keys.FACE_PENDING] = facePending
+            preferences[Keys.QUALITY_PARSED] = qualityParsed
+            preferences[Keys.QUALITY_PENDING] = qualityPending
             preferences[Keys.CURRENT_STAGE] = currentStage.name
             preferences[Keys.LAST_UPDATED] = System.currentTimeMillis()
         }

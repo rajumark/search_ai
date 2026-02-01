@@ -306,7 +306,6 @@ private fun SelectionToolbar(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-@Composable
 private fun EmptyState(query: String, modifier: Modifier = Modifier) {
     Box(modifier = modifier.padding(32.dp), contentAlignment = Alignment.Center) {
         if (query.isEmpty()) {

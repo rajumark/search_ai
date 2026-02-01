@@ -34,6 +34,7 @@ android {
 dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:database"))
+    implementation(project(":core:media_index"))
     
     implementation(libs.androidx.core.ktx)
     implementation(libs.hilt.android)

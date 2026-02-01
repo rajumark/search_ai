@@ -144,6 +144,8 @@ constructor(
                 labelPending = labelPending,
                 faceParsed = faceParsed,
                 facePending = facePending,
+                qualityParsed = 0,
+                qualityPending = 0,
                 currentStage = com.photo.searchai.data.datastore.ProcessingStage.IDLE
         )
     }
