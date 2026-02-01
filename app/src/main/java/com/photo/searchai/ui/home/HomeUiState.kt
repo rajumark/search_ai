@@ -30,6 +30,8 @@ data class HomeUiState(
         val ocrProgress: StageProgress = StageProgress("Text Recognition"),
         val barcodeProgress: StageProgress = StageProgress("Barcode Scanning"),
         val labelProgress: StageProgress = StageProgress("Image Labeling"),
+        val faceProgress: StageProgress = StageProgress("Face Detection"),
+        val qualityProgress: StageProgress = StageProgress("Quality Analysis"),
         val overallProgress: Float = 0f,
         val overallPercentage: Int = 0,
         val initialPendingCount: Int = 0,
@@ -55,7 +57,8 @@ data class HomeUiState(
                 totalImages > 0 &&
                         ocrProgress.isComplete &&
                         barcodeProgress.isComplete &&
-                        labelProgress.isComplete
+                        labelProgress.isComplete &&
+                        qualityProgress.isComplete
 
     val currentStageName: String
         get() =
@@ -63,6 +66,8 @@ data class HomeUiState(
                     ProcessingStage.OCR -> "Text Recognition"
                     ProcessingStage.BARCODE -> "Barcode Scanning"
                     ProcessingStage.LABELING -> "Image Labeling"
+                    ProcessingStage.FACE_DETECTION -> "Face Detection"
+                    ProcessingStage.QUALITY_ANALYSIS -> "Quality Analysis"
                     ProcessingStage.COMPLETE -> "Complete"
                     ProcessingStage.IDLE -> "Ready"
                 }
@@ -70,9 +75,10 @@ data class HomeUiState(
     val stageNumberText: String
         get() =
                 when (currentStage) {
-                    ProcessingStage.OCR -> "1/3"
-                    ProcessingStage.BARCODE -> "2/3"
-                    ProcessingStage.LABELING -> "3/3"
+                    ProcessingStage.BARCODE -> "2/5"
+                    ProcessingStage.LABELING -> "3/5"
+                    ProcessingStage.FACE_DETECTION -> "4/5"
+                    ProcessingStage.QUALITY_ANALYSIS -> "5/5"
                     else -> ""
                 }
 

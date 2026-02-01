@@ -16,6 +16,7 @@ import androidx.room.PrimaryKey
                         Index(value = ["barcodeParsed"]),
                         Index(value = ["labelParsed"]),
                         Index(value = ["faceParsed"]),
+                        Index(value = ["qualityParsed"]),
                         Index(value = ["mediaStoreId"])]
 )
 data class ImageEntity(
@@ -29,7 +30,9 @@ data class ImageEntity(
         // Image labeling completed
         val labelParsed: Boolean = false,
         // Face detection completed
-        val faceParsed: Boolean = false
+        val faceParsed: Boolean = false,
+        // Quality analysis completed
+        val qualityParsed: Boolean = false
 ) {
     // Helper property for checking if OCR is done (uses 'parsed' for backward compatibility)
     val ocrParsed: Boolean
@@ -37,5 +40,5 @@ data class ImageEntity(
 
     // Check if all processing is complete
     val fullyProcessed: Boolean
-        get() = parsed && barcodeParsed && labelParsed && faceParsed
+        get() = parsed && barcodeParsed && labelParsed && faceParsed && qualityParsed
 }

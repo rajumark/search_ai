@@ -7,13 +7,14 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.photo.searchai.core.database.dao.BarcodeDao
 import com.photo.searchai.core.database.dao.FaceDao
 import com.photo.searchai.core.database.dao.ImageDao
-import com.photo.searchai.core.database.dao.ImageLabelDao
+import com.photo.searchai.core.database.dao.ImageQualityDao
 import com.photo.searchai.core.database.dao.OcrTextDao
 import com.photo.searchai.core.database.dao.WorkerHistoryDao
 import com.photo.searchai.core.database.entity.BarcodeEntity
 import com.photo.searchai.core.database.entity.FaceEntity
 import com.photo.searchai.core.database.entity.ImageEntity
 import com.photo.searchai.core.database.entity.ImageLabelEntity
+import com.photo.searchai.core.database.entity.ImageQualityEntity
 import com.photo.searchai.core.database.entity.OcrTextEntity
 import com.photo.searchai.core.database.entity.WorkerHistoryEntity
 
@@ -29,8 +30,9 @@ import com.photo.searchai.core.database.entity.WorkerHistoryEntity
                         BarcodeEntity::class,
                         ImageLabelEntity::class,
                         FaceEntity::class,
-                        WorkerHistoryEntity::class],
-        version = 4,
+                        WorkerHistoryEntity::class,
+                        ImageQualityEntity::class],
+        version = 5,
         exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -39,6 +41,7 @@ abstract class AppDatabase : RoomDatabase() {
         abstract fun barcodeDao(): BarcodeDao
         abstract fun imageLabelDao(): ImageLabelDao
         abstract fun faceDao(): FaceDao
+        abstract fun imageQualityDao(): ImageQualityDao
         abstract fun workerHistoryDao(): WorkerHistoryDao
 
         companion object {
@@ -168,6 +171,41 @@ abstract class AppDatabase : RoomDatabase() {
                                         )
                                         db.execSQL(
                                                 "CREATE INDEX IF NOT EXISTS index_faces_croppedFacePath ON faces(croppedFacePath)"
+                                        )
+                                }
+                        }
+
+                /**
+                 * Migration from version 4 to 5. Adds qualityParsed column to images table and
+                 * creates image_quality table for storing quality metrics.
+                 */
+                val MIGRATION_4_5 =
+                        object : Migration(4, 5) {
+                                override fun migrate(db: SupportSQLiteDatabase) {
+                                        // Add qualityParsed column to images table
+                                        db.execSQL(
+                                                "ALTER TABLE images ADD COLUMN qualityParsed INTEGER NOT NULL DEFAULT 0"
+                                        )
+
+                                        // Create image_quality table
+                                        db.execSQL(
+                                                """
+                    CREATE TABLE IF NOT EXISTS image_quality (
+                        mediaStoreId INTEGER PRIMARY KEY NOT NULL,
+                        blurScore REAL NOT NULL,
+                        brightnessScore REAL NOT NULL,
+                        contrastScore REAL NOT NULL,
+                        overexposedRatio REAL NOT NULL,
+                        width INTEGER NOT NULL,
+                        height INTEGER NOT NULL,
+                        imageHash TEXT NOT NULL,
+                        analyzedAt INTEGER NOT NULL,
+                        FOREIGN KEY(mediaStoreId) REFERENCES images(mediaStoreId) ON DELETE CASCADE
+                    )
+                """
+                                        )
+                                        db.execSQL(
+                                                "CREATE INDEX IF NOT EXISTS index_image_quality_mediaStoreId ON image_quality(mediaStoreId)"
                                         )
                                 }
                         }

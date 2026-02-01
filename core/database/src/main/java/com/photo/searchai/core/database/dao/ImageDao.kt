@@ -102,9 +102,25 @@ interface ImageDao {
     @Query("SELECT COUNT(*) FROM images WHERE faceParsed = 0")
     fun getFacePendingCountFlow(): Flow<Int>
 
+    /** Get IDs of images where quality analysis is not done, limited to batch size. */
+    @Query("SELECT mediaStoreId FROM images WHERE qualityParsed = 0 LIMIT :limit")
+    suspend fun getUnparsedQualityImageIds(limit: Int): List<Long>
+
+    /** Mark an image as quality parsed. */
+    @Query("UPDATE images SET qualityParsed = 1 WHERE mediaStoreId = :id")
+    suspend fun markAsQualityParsed(id: Long): Int
+
+    /** Get count of quality parsed images as Flow. */
+    @Query("SELECT COUNT(*) FROM images WHERE qualityParsed = 1")
+    fun getQualityParsedCountFlow(): Flow<Int>
+
+    /** Get count of quality unparsed images as Flow. */
+    @Query("SELECT COUNT(*) FROM images WHERE qualityParsed = 0")
+    fun getQualityPendingCountFlow(): Flow<Int>
+
     /** Get count of fully processed images (all stages done). */
     @Query(
-            "SELECT COUNT(*) FROM images WHERE parsed = 1 AND barcodeParsed = 1 AND labelParsed = 1 AND faceParsed = 1"
+            "SELECT COUNT(*) FROM images WHERE parsed = 1 AND barcodeParsed = 1 AND labelParsed = 1 AND faceParsed = 1 AND qualityParsed = 1"
     )
     fun getFullyProcessedCountFlow(): Flow<Int>
 }

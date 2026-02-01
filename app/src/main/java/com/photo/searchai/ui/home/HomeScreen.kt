@@ -32,6 +32,7 @@ import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.PhotoFilter
 import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Refresh
@@ -70,6 +71,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.photo.searchai.data.datastore.BenchmarkData
+import com.photo.searchai.data.datastore.ProcessingStage
+import com.photo.searchai.ui.home.StageProgress
+import com.photo.searchai.ui.home.HomeUiState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -198,6 +202,16 @@ fun HomeScreen(
                                                         title = "Image Labeling",
                                                         subtitle = "Object & Scene Detection",
                                                         stageProgress = uiState.labelProgress,
+                                                        averageTimePerImageMs =
+                                                                uiState.averageTimePerImageMs
+                                                )
+                                                
+                                                // Quality Analysis Card
+                                                ProcessingCard(
+                                                        icon = Icons.Rounded.PhotoFilter,
+                                                        title = "Quality Analysis",
+                                                        subtitle = "Blur, Brightness & More",
+                                                        stageProgress = uiState.qualityProgress,
                                                         averageTimePerImageMs =
                                                                 uiState.averageTimePerImageMs
                                                 )

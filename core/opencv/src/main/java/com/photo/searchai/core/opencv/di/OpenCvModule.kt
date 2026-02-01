@@ -21,4 +21,9 @@ abstract class OpenCvModule {
     abstract fun bindBlurDetector(
         impl: LaplacianBlurDetector
     ): BlurDetector
+
+    @Binds
+    abstract fun bindImageQualityAnalyzer(
+        impl: OpenCvImageQualityAnalyzer
+    ): ImageQualityAnalyzer
 }

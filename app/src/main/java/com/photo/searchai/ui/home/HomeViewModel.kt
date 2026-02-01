@@ -128,34 +128,39 @@ class HomeViewModel @Inject constructor(private val ocrRepository: OcrRepository
                         isLoading = false,
                         statusText = statusText,
                         currentStage = currentStage,
-                        ocrProgress =
-                                StageProgress(
-                                        name = "Text Recognition",
-                                        parsed = ocrParsed,
-                                        pending = ocrPending,
-                                        total = total,
-                                        isActive = currentStage == ProcessingStage.OCR,
-                                        isComplete = ocrPending == 0 && total > 0
-                                ),
-                        barcodeProgress =
-                                StageProgress(
-                                        name = "Barcode Scanning",
-                                        parsed = barcodeParsed,
-                                        pending = barcodePending,
-                                        total = total,
-                                        isActive = currentStage == ProcessingStage.BARCODE,
-                                        isComplete = barcodePending == 0 && total > 0
-                                ),
-                        labelProgress =
-                                StageProgress(
-                                        name = "Image Labeling",
-                                        parsed = labelParsed,
-                                        pending = labelPending,
-                                        total = total,
-                                        isActive = currentStage == ProcessingStage.LABELING,
-                                        isComplete = labelPending == 0 && total > 0
-                                ),
-                        overallProgress = overallProgress,
+                        ocrProgress = StageProgress(
+                                                        name = "Text Recognition",
+                                                        parsed = progress.ocrParsed,
+                                                        pending = progress.ocrPending,
+                                                        total = progress.totalImages,
+                                                        isActive = progress.currentStage == ProcessingStage.OCR,
+                                                        isComplete = progress.ocrParsed == progress.totalImages && progress.totalImages > 0
+                                                ),
+                                                barcodeProgress = StageProgress(
+                                                        name = "Barcode Scanning",
+                                                        parsed = progress.barcodeParsed,
+                                                        pending = progress.barcodePending,
+                                                        total = progress.totalImages,
+                                                        isActive = progress.currentStage == ProcessingStage.BARCODE,
+                                                        isComplete = progress.barcodeParsed == progress.totalImages && progress.totalImages > 0
+                                                ),
+                                                labelProgress = StageProgress(
+                                                        name = "Image Labeling",
+                                                        parsed = progress.labelParsed,
+                                                        pending = progress.labelPending,
+                                                        total = progress.totalImages,
+                                                        isActive = progress.currentStage == ProcessingStage.LABELING,
+                                                        isComplete = progress.labelParsed == progress.totalImages && progress.totalImages > 0
+                                                ),
+                                                qualityProgress = StageProgress(
+                                                        name = "Quality Analysis",
+                                                        parsed = progress.qualityParsed,
+                                                        pending = progress.qualityPending,
+                                                        total = progress.totalImages,
+                                                        isActive = progress.currentStage == ProcessingStage.QUALITY_ANALYSIS,
+                                                        isComplete = progress.qualityParsed == progress.totalImages && progress.totalImages > 0
+                                                ),
+                                                overallProgress = progress.overallProgress,
                         overallPercentage = overallPercentage,
                         initialPendingCount =
                                 if (initialPendingCount > 0) initialPendingCount else 0,

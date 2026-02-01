@@ -13,19 +13,22 @@ import androidx.work.WorkerParameters
 import com.photo.searchai.R
 import com.photo.searchai.data.datastore.OcrProgressDataStore
 import com.photo.searchai.data.datastore.ProcessingStage
-import com.photo.searchai.data.local.dao.BarcodeDao
-import com.photo.searchai.data.local.dao.FaceDao
-import com.photo.searchai.data.local.dao.ImageDao
-import com.photo.searchai.data.local.dao.ImageLabelDao
-import com.photo.searchai.data.local.dao.OcrTextDao
-import com.photo.searchai.data.local.entity.BarcodeEntity
-import com.photo.searchai.data.local.entity.ImageLabelEntity
-import com.photo.searchai.data.local.entity.OcrTextEntity
+import com.photo.searchai.core.database.dao.BarcodeDao
+import com.photo.searchai.core.database.dao.FaceDao
+import com.photo.searchai.core.database.dao.ImageDao
+import com.photo.searchai.core.database.dao.ImageLabelDao
+import com.photo.searchai.core.database.dao.ImageQualityDao
+import com.photo.searchai.core.database.dao.OcrTextDao
+import com.photo.searchai.core.database.entity.BarcodeEntity
+import com.photo.searchai.core.database.entity.ImageLabelEntity
+import com.photo.searchai.core.database.entity.ImageQualityEntity
+import com.photo.searchai.core.database.entity.OcrTextEntity
 import com.photo.searchai.datasource.PhotoDataSource
 import com.photo.searchai.ocr.BarcodeProcessor
 import com.photo.searchai.ocr.FaceDetectionProcessor
 import com.photo.searchai.ocr.ImageLabelProcessor
 import com.photo.searchai.ocr.OcrProcessor
+import com.photo.searchai.core.opencv.ImageQualityAnalyzer
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
@@ -52,6 +55,8 @@ constructor(
         private val imageLabelProcessor: ImageLabelProcessor,
         private val faceDao: FaceDao,
         private val faceDetectionProcessor: FaceDetectionProcessor,
+        private val imageQualityDao: ImageQualityDao,
+        private val imageQualityAnalyzer: ImageQualityAnalyzer,
         private val progressDataStore: OcrProgressDataStore
 ) : CoroutineWorker(context, workerParams) {
 
@@ -88,17 +93,22 @@ constructor(
                         // STAGE 4: Face Detection
                         processFaceDetectionStage()
 
+                        // STAGE 5: Image Quality Analysis
+                        processQualityStage()
+
                         // Check if any new images were added during processing
                         val ocrPending = imageDao.getPendingCountFlow().first()
                         val barcodePending = imageDao.getBarcodePendingCountFlow().first()
                         val labelPending = imageDao.getLabelPendingCountFlow().first()
                         val facePending = imageDao.getFacePendingCountFlow().first()
+                        val qualityPending = imageDao.getQualityPendingCountFlow().first()
 
                         hasMoreWork =
                                 ocrPending > 0 ||
                                         barcodePending > 0 ||
                                         labelPending > 0 ||
-                                        facePending > 0
+                                        facePending > 0 ||
+                                        qualityPending > 0
                     }
 
                     // Final completion
@@ -412,6 +422,67 @@ constructor(
     }
 
     // ============================================================================
+    // STAGE 5: Image Quality Analysis
+    // ============================================================================
+    private suspend fun processQualityStage() {
+        progressDataStore.updateCurrentStage(ProcessingStage.QUALITY_ANALYSIS)
+
+        while (true) {
+            val unparsedIds = imageDao.getUnparsedQualityImageIds(BATCH_SIZE)
+            if (unparsedIds.isEmpty()) break
+
+            val total = imageDao.getTotalCountFlow().first()
+            var parsed = imageDao.getQualityParsedCountFlow().first()
+
+            for (imageId in unparsedIds) {
+                val success = processQualityForImage(imageId)
+                if (success) parsed++
+
+                val pending = total - parsed
+                progressDataStore.updateQualityProgress(total, parsed, pending)
+                updateNotification("Quality Analysis", parsed, total, ProcessingStage.QUALITY_ANALYSIS)
+            }
+        }
+    }
+
+    private suspend fun processQualityForImage(mediaStoreId: Long): Boolean {
+        try {
+            val path = photoDataSource.getImagePath(mediaStoreId)
+                ?: run {
+                    imageDao.markAsQualityParsed(mediaStoreId)
+                    return false
+                }
+
+            val bitmap = photoDataSource.getScaledBitmap(path)
+                ?: run {
+                    imageDao.markAsQualityParsed(mediaStoreId)
+                    return false
+                }
+
+            try {
+                val qualityResult = imageQualityAnalyzer.analyze(bitmap)
+                val entity = ImageQualityEntity(
+                    mediaStoreId = mediaStoreId,
+                    blurScore = qualityResult.blurScore,
+                    brightnessScore = qualityResult.brightnessScore,
+                    contrastScore = qualityResult.contrastScore,
+                    overexposedRatio = qualityResult.overexposedRatio,
+                    width = qualityResult.width,
+                    height = qualityResult.height,
+                    imageHash = qualityResult.imageHash
+                )
+                imageQualityDao.insertQuality(entity)
+                imageDao.markAsQualityParsed(mediaStoreId)
+                return true
+            } finally {
+                bitmap.recycle()
+            }
+        } catch (e: Exception) {
+            return false
+        }
+    }
+
+    // ============================================================================
     // Notification Helpers
     // ============================================================================
     private fun updateNotification(
@@ -423,10 +494,11 @@ constructor(
         val progress = if (total > 0) (parsed * 100 / total) else 0
         val stageNumber =
                 when (stage) {
-                    ProcessingStage.OCR -> "1/4"
-                    ProcessingStage.BARCODE -> "2/4"
-                    ProcessingStage.LABELING -> "3/4"
-                    ProcessingStage.FACE_DETECTION -> "4/4"
+                    ProcessingStage.OCR -> "1/5"
+                    ProcessingStage.BARCODE -> "2/5"
+                    ProcessingStage.LABELING -> "3/5"
+                    ProcessingStage.FACE_DETECTION -> "4/5"
+                    ProcessingStage.QUALITY_ANALYSIS -> "5/5"
                     else -> ""
                 }
 
@@ -475,10 +547,11 @@ constructor(
 
         val stageNumber =
                 when (stage) {
-                    ProcessingStage.OCR -> "1/4"
-                    ProcessingStage.BARCODE -> "2/4"
-                    ProcessingStage.LABELING -> "3/4"
-                    ProcessingStage.FACE_DETECTION -> "4/4"
+                    ProcessingStage.OCR -> "1/5"
+                    ProcessingStage.BARCODE -> "2/5"
+                    ProcessingStage.LABELING -> "3/5"
+                    ProcessingStage.FACE_DETECTION -> "4/5"
+                    ProcessingStage.QUALITY_ANALYSIS -> "5/5"
                     else -> ""
                 }
 
