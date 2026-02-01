@@ -1,4 +1,4 @@
-package com.photo.searchai.battery
+package com.photo.searchai.feature.battery
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts

@@ -53,3 +53,4 @@ core/work/build
 core/metadata_index/build
 core/rules_engine/build
 feature/onboarding/build
+core/media_index/build

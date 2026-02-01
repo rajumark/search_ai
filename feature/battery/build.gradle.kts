@@ -49,6 +49,7 @@ dependencies {
     // Module dependencies
     implementation(project(":core:common"))
     implementation(project(":core:datastore"))
+    implementation(libs.androidx.datastore.preferences)
     
     // Core
     implementation(libs.androidx.core.ktx)

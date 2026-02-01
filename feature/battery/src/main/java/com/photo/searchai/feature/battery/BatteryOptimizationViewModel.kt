@@ -1,4 +1,4 @@
-package com.photo.searchai.battery
+package com.photo.searchai.feature.battery
 
 import android.content.Context
 import android.content.Intent

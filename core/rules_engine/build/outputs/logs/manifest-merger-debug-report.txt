@@ -1,16 +1,16 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest9430758044828653121.xml:2:13-83
-INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest9430758044828653121.xml:2:13-83
+ADDED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest13144060373212799785.xml:2:13-83
+INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest13144060373212799785.xml:2:13-83
 	package
-		INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest9430758044828653121.xml
+		INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest13144060373212799785.xml
 	xmlns:android
-		ADDED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest9430758044828653121.xml:2:23-81
+		ADDED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest13144060373212799785.xml:2:23-81
 uses-sdk
-INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest9430758044828653121.xml reason: use-sdk injection requested
-INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest9430758044828653121.xml
-INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest9430758044828653121.xml
+INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest13144060373212799785.xml reason: use-sdk injection requested
+INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest13144060373212799785.xml
+INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest13144060373212799785.xml
 	android:targetSdkVersion
-		INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest9430758044828653121.xml
+		INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest13144060373212799785.xml
 	android:minSdkVersion
-		INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest9430758044828653121.xml
+		INJECTED from /home/raju/Documents/projects/search_ai/core/rules_engine/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest13144060373212799785.xml

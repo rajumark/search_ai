@@ -4,8 +4,6 @@ import android.content.ContentResolver
 import android.content.Context
 import androidx.room.Room
 import androidx.work.WorkManager
-import com.photo.searchai.battery.BatteryOptimizationHelper
-import com.photo.searchai.battery.BatteryOptimizationPreferences
 import com.photo.searchai.data.datastore.OcrProgressDataStore
 import com.photo.searchai.data.datastore.ScheduledWorkDataStore
 import com.photo.searchai.data.local.AppDatabase
@@ -16,6 +14,8 @@ import com.photo.searchai.data.local.dao.ImageLabelDao
 import com.photo.searchai.data.local.dao.OcrTextDao
 import com.photo.searchai.data.local.dao.WorkerHistoryDao
 import com.photo.searchai.datasource.PhotoDataSource
+import com.photo.searchai.feature.battery.BatteryOptimizationHelper
+import com.photo.searchai.feature.battery.BatteryOptimizationPreferences
 import com.photo.searchai.ocr.BarcodeProcessor
 import com.photo.searchai.ocr.FaceDetectionProcessor
 import com.photo.searchai.ocr.ImageLabelProcessor
