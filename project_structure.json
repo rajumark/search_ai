@@ -1,0 +1,159 @@
+﻿{
+    "AndroidManifest.xml":  "file",
+    "ic_launcher-playstore.png":  "file",
+    "java":  {
+                 "com":  {
+                             "photo":  {
+                                           "searchai":  {
+                                                            "battery":  {
+                                                                            "BatteryOptimizationHelper.kt":  "file",
+                                                                            "BatteryOptimizationPreferences.kt":  "file",
+                                                                            "BatteryOptimizationScreen.kt":  "file",
+                                                                            "BatteryOptimizationViewModel.kt":  "file"
+                                                                        },
+                                                            "data":  {
+                                                                         "datastore":  {
+                                                                                           "OcrProgressDataStore.kt":  "file",
+                                                                                           "ScheduledWorkDataStore.kt":  "file"
+                                                                                       },
+                                                                         "local":  {
+                                                                                       "AppDatabase.kt":  "file",
+                                                                                       "dao":  {
+                                                                                                   "BarcodeDao.kt":  "file",
+                                                                                                   "FaceDao.kt":  "file",
+                                                                                                   "ImageDao.kt":  "file",
+                                                                                                   "ImageLabelDao.kt":  "file",
+                                                                                                   "OcrTextDao.kt":  "file",
+                                                                                                   "WorkerHistoryDao.kt":  "file"
+                                                                                               },
+                                                                                       "entity":  {
+                                                                                                      "BarcodeEntity.kt":  "file",
+                                                                                                      "FaceEntity.kt":  "file",
+                                                                                                      "ImageEntity.kt":  "file",
+                                                                                                      "ImageLabelEntity.kt":  "file",
+                                                                                                      "ImageWithOcrText.kt":  "file",
+                                                                                                      "OcrTextEntity.kt":  "file",
+                                                                                                      "WorkerHistoryEntity.kt":  "file"
+                                                                                                  }
+                                                                                   }
+                                                                     },
+                                                            "datasource":  {
+                                                                               "ImageMetadata.kt":  "file",
+                                                                               "PhotoDataSource.kt":  "file"
+                                                                           },
+                                                            "di":  {
+                                                                       "AppModule.kt":  "file"
+                                                                   },
+                                                            "MainActivity.kt":  "file",
+                                                            "navigation":  {
+                                                                               "NavGraph.kt":  "file",
+                                                                               "NavRoutes.kt":  "file"
+                                                                           },
+                                                            "ocr":  {
+                                                                        "BarcodeProcessor.kt":  "file",
+                                                                        "FaceDetectionProcessor.kt":  "file",
+                                                                        "ImageLabelProcessor.kt":  "file",
+                                                                        "OcrProcessor.kt":  "file"
+                                                                    },
+                                                            "PhotoSearchAIApplication.kt":  "file",
+                                                            "repository":  {
+                                                                               "OcrRepository.kt":  "file",
+                                                                               "PhotoRepository.kt":  "file"
+                                                                           },
+                                                            "service":  {
+                                                                            "ImageProcessingService.kt":  "file"
+                                                                        },
+                                                            "ui":  {
+                                                                       "component":  {
+                                                                                         "ImageGridView.kt":  "file"
+                                                                                     },
+                                                                       "fullscreen":  {
+                                                                                          "FullScreenImageViewer.kt":  "file",
+                                                                                          "FullScreenUiState.kt":  "file",
+                                                                                          "FullScreenViewModel.kt":  "file"
+                                                                                      },
+                                                                       "history":  {
+                                                                                       "RefreshHistoryScreen.kt":  "file",
+                                                                                       "RefreshHistoryViewModel.kt":  "file"
+                                                                                   },
+                                                                       "home":  {
+                                                                                    "HomeScreen.kt":  "file",
+                                                                                    "HomeUiState.kt":  "file",
+                                                                                    "HomeViewModel.kt":  "file"
+                                                                                },
+                                                                       "permission":  {
+                                                                                          "NavigationEvent.kt":  "file",
+                                                                                          "PermissionScreen.kt":  "file",
+                                                                                          "PermissionUiState.kt":  "file",
+                                                                                          "PermissionViewModel.kt":  "file"
+                                                                                      },
+                                                                       "screens":  {
+                                                                                       "BarcodePhotosScreen.kt":  "file",
+                                                                                       "DocumentScannerScreen.kt":  "file",
+                                                                                       "FaceSearchScreen.kt":  "file",
+                                                                                       "FaceSearchUiState.kt":  "file",
+                                                                                       "FaceSearchViewModel.kt":  "file"
+                                                                                   },
+                                                                       "search":  {
+                                                                                      "SearchByTextScreen.kt":  "file",
+                                                                                      "SearchUiState.kt":  "file",
+                                                                                      "SearchViewModel.kt":  "file"
+                                                                                  },
+                                                                       "theme":  {
+                                                                                     "Color.kt":  "file",
+                                                                                     "Theme.kt":  "file",
+                                                                                     "Type.kt":  "file"
+                                                                                 }
+                                                                   },
+                                                            "worker":  {
+                                                                           "ImageProcessingWorker.kt":  "file",
+                                                                           "OcrIndexingWorker.kt":  "file",
+                                                                           "PeriodicImageProcessingWorker.kt":  "file",
+                                                                           "WorkManagerHelper.kt":  "file"
+                                                                       }
+                                                        }
+                                       }
+                         }
+             },
+    "res":  {
+                "drawable":  {
+                                 "ic_launcher_background.xml":  "file",
+                                 "ic_launcher_foreground.xml":  "file"
+                             },
+                "mipmap-anydpi-v26":  {
+                                          "ic_launcher.xml":  "file",
+                                          "ic_launcher_round.xml":  "file"
+                                      },
+                "mipmap-hdpi":  {
+                                    "ic_launcher.webp":  "file",
+                                    "ic_launcher_round.webp":  "file"
+                                },
+                "mipmap-mdpi":  {
+                                    "ic_launcher.webp":  "file",
+                                    "ic_launcher_round.webp":  "file"
+                                },
+                "mipmap-xhdpi":  {
+                                     "ic_launcher.webp":  "file",
+                                     "ic_launcher_round.webp":  "file"
+                                 },
+                "mipmap-xxhdpi":  {
+                                      "ic_launcher.webp":  "file",
+                                      "ic_launcher_round.webp":  "file"
+                                  },
+                "mipmap-xxxhdpi":  {
+                                       "ic_launcher.webp":  "file",
+                                       "ic_launcher_round.webp":  "file"
+                                   },
+                "values":  {
+                               "colors.xml":  "file",
+                               "ic_launcher_background.xml":  "file",
+                               "strings.xml":  "file",
+                               "themes.xml":  "file"
+                           },
+                "xml":  {
+                            "backup_rules.xml":  "file",
+                            "data_extraction_rules.xml":  "file",
+                            "file_paths.xml":  "file"
+                        }
+            }
+}
