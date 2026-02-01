@@ -1,0 +1,801 @@
+{
+    "project": "PhotoSearchAI",
+    "database": "photo_search_db",
+    "version": 6,
+    "last_updated": "2026-02-01",
+    "modules": [
+        {
+            "name": "core-database",
+            "path": "core/database",
+            "purpose": "Centralized data storage for media metadata, ML analysis results, and organization rules."
+        }
+    ],
+    "categories": [
+        "Core",
+        "OCR",
+        "Barcodes",
+        "Classification",
+        "Faces",
+        "Quality",
+        "Metadata",
+        "Duplicates",
+        "Storage",
+        "Vault",
+        "Organization",
+        "System"
+    ],
+    "tables": [
+        {
+            "name": "images",
+            "module": "core-database",
+            "category": "Core",
+            "description": "Primary table tracks images synchronized from Android MediaStore and their analysis status.",
+            "columns": [
+                {
+                    "name": "mediaStoreId",
+                    "type": "Long",
+                    "primary_key": true,
+                    "description": "Unique identifier from Android MediaStore.",
+                    "example": 10001
+                },
+                {
+                    "name": "path",
+                    "type": "String",
+                    "description": "Absolute filesystem path to the image.",
+                    "example": "/storage/emulated/0/DCIM/Camera/IMG_20240101_120000.jpg"
+                },
+                {
+                    "name": "dateAdded",
+                    "type": "Long",
+                    "description": "Unix timestamp when the image was added to MediaStore.",
+                    "example": 1704110400000
+                },
+                {
+                    "name": "parsed",
+                    "type": "Boolean",
+                    "description": "Legacy field, now indicates if OCR processing is complete.",
+                    "example": true
+                },
+                {
+                    "name": "barcodeParsed",
+                    "type": "Boolean",
+                    "description": "True if barcode scanning has been performed.",
+                    "example": false
+                },
+                {
+                    "name": "labelParsed",
+                    "type": "Boolean",
+                    "description": "True if image labeling (ML Kit) has been performed.",
+                    "example": true
+                },
+                {
+                    "name": "faceParsed",
+                    "type": "Boolean",
+                    "description": "True if face detection has been performed.",
+                    "example": true
+                },
+                {
+                    "name": "qualityParsed",
+                    "type": "Boolean",
+                    "description": "True if image quality analysis (OpenCV) has been performed.",
+                    "example": true
+                },
+                {
+                    "name": "metadataParsed",
+                    "type": "Boolean",
+                    "description": "True if EXIF metadata extraction has been performed.",
+                    "example": true
+                }
+            ],
+            "relationships": []
+        },
+        {
+            "name": "ocr_text",
+            "module": "core-database",
+            "category": "OCR",
+            "description": "Stores text extracted from images via OCR.",
+            "columns": [
+                {
+                    "name": "mediaStoreId",
+                    "type": "Long",
+                    "primary_key": true,
+                    "description": "Reference to images table.",
+                    "example": 10001
+                },
+                {
+                    "name": "fullText",
+                    "type": "String",
+                    "description": "Complete raw text extracted from the image.",
+                    "example": "Meeting Agenda\n1. Project Sync\n2. Design Review"
+                },
+                {
+                    "name": "indexedTokens",
+                    "type": "String",
+                    "description": "Pre-processed tokens for search indexing.",
+                    "example": "meeting agenda project sync design review"
+                }
+            ],
+            "relationships": [
+                {
+                    "column": "mediaStoreId",
+                    "references": "images(mediaStoreId)",
+                    "onDelete": "CASCADE"
+                }
+            ]
+        },
+        {
+            "name": "barcodes",
+            "module": "core-database",
+            "category": "Barcodes",
+            "description": "Stores barcodes detected within images.",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "Long",
+                    "primary_key": true,
+                    "auto_generate": true,
+                    "description": "Internal unique identifier.",
+                    "example": 1
+                },
+                {
+                    "name": "mediaStoreId",
+                    "type": "Long",
+                    "description": "Reference to images table.",
+                    "example": 10002
+                },
+                {
+                    "name": "format",
+                    "type": "Int",
+                    "description": "Barcode format integer (ML Kit enum).",
+                    "example": 256
+                },
+                {
+                    "name": "formatName",
+                    "type": "String",
+                    "description": "Human-readable format name.",
+                    "example": "QR_CODE"
+                },
+                {
+                    "name": "rawValue",
+                    "type": "String",
+                    "description": "Raw data encoded in the barcode.",
+                    "example": "https://example.com/invite"
+                },
+                {
+                    "name": "displayValue",
+                    "type": "String",
+                    "description": "User-friendly representation of the value.",
+                    "example": "https://example.com/invite"
+                },
+                {
+                    "name": "valueType",
+                    "type": "Int",
+                    "description": "Type of content (URL, EMAIL, TEXT, etc.).",
+                    "example": 8
+                }
+            ],
+            "relationships": [
+                {
+                    "column": "mediaStoreId",
+                    "references": "images(mediaStoreId)",
+                    "onDelete": "CASCADE"
+                }
+            ]
+        },
+        {
+            "name": "image_labels",
+            "module": "core-database",
+            "category": "Classification",
+            "description": "Stores labels detected by ML Kit for image classification.",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "Long",
+                    "primary_key": true,
+                    "auto_generate": true,
+                    "description": "Internal unique identifier.",
+                    "example": 50
+                },
+                {
+                    "name": "mediaStoreId",
+                    "type": "Long",
+                    "description": "Reference to images table.",
+                    "example": 10001
+                },
+                {
+                    "name": "label",
+                    "type": "String",
+                    "description": "Detected object or scene label.",
+                    "example": "Mountain"
+                },
+                {
+                    "name": "confidence",
+                    "type": "Float",
+                    "description": "Probability score between 0 and 1.",
+                    "example": 0.98
+                },
+                {
+                    "name": "index",
+                    "type": "Int",
+                    "description": "ML Kit model index for this label.",
+                    "example": 123
+                }
+            ],
+            "relationships": [
+                {
+                    "column": "mediaStoreId",
+                    "references": "images(mediaStoreId)",
+                    "onDelete": "CASCADE"
+                }
+            ]
+        },
+        {
+            "name": "faces",
+            "module": "core-database",
+            "category": "Faces",
+            "description": "Stores data about faces detected in images, including crops and bounding boxes.",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "Long",
+                    "primary_key": true,
+                    "auto_generate": true,
+                    "description": "Internal unique identifier.",
+                    "example": 5
+                },
+                {
+                    "name": "mediaStoreId",
+                    "type": "Long",
+                    "description": "Reference to images table.",
+                    "example": 10003
+                },
+                {
+                    "name": "croppedFacePath",
+                    "type": "String",
+                    "description": "Relative path to the cropped face image file.",
+                    "example": "faces/crop_10003_0.jpg"
+                },
+                {
+                    "name": "boundingBoxLeft",
+                    "type": "Int",
+                    "description": "Bounding box left coordinate.",
+                    "example": 150
+                },
+                {
+                    "name": "boundingBoxTop",
+                    "type": "Int",
+                    "description": "Bounding box top coordinate.",
+                    "example": 200
+                },
+                {
+                    "name": "boundingBoxRight",
+                    "type": "Int",
+                    "description": "Bounding box right coordinate.",
+                    "example": 450
+                },
+                {
+                    "name": "boundingBoxBottom",
+                    "type": "Int",
+                    "description": "Bounding box bottom coordinate.",
+                    "example": 500
+                },
+                {
+                    "name": "faceWidth",
+                    "type": "Int",
+                    "description": "Width of the detected face.",
+                    "example": 300
+                },
+                {
+                    "name": "faceHeight",
+                    "type": "Int",
+                    "description": "Height of the detected face.",
+                    "example": 300
+                },
+                {
+                    "name": "faceIndex",
+                    "type": "Int",
+                    "description": "Index of the face within the image.",
+                    "example": 0
+                },
+                {
+                    "name": "detectedAt",
+                    "type": "Long",
+                    "description": "Unix timestamp when detection occurred.",
+                    "example": 1704115000000
+                }
+            ],
+            "relationships": [
+                {
+                    "column": "mediaStoreId",
+                    "references": "images(mediaStoreId)",
+                    "onDelete": "CASCADE"
+                }
+            ]
+        },
+        {
+            "name": "image_quality",
+            "module": "core-database",
+            "category": "Quality",
+            "description": "Stores metrics for image quality analysis (blur, brightness, etc.).",
+            "columns": [
+                {
+                    "name": "mediaStoreId",
+                    "type": "Long",
+                    "primary_key": true,
+                    "description": "Reference to images table.",
+                    "example": 10001
+                },
+                {
+                    "name": "blurScore",
+                    "type": "Double",
+                    "description": "Score representing image sharpness (Laplacian variance).",
+                    "example": 85.5
+                },
+                {
+                    "name": "brightnessScore",
+                    "type": "Double",
+                    "description": "Average pixel brightness.",
+                    "example": 127.0
+                },
+                {
+                    "name": "contrastScore",
+                    "type": "Double",
+                    "description": "Standard deviation of pixel intensities.",
+                    "example": 45.2
+                },
+                {
+                    "name": "overexposedRatio",
+                    "type": "Double",
+                    "description": "Ratio of pixels that are near pure white.",
+                    "example": 0.05
+                },
+                {
+                    "name": "width",
+                    "type": "Int",
+                    "description": "Image width in pixels.",
+                    "example": 4032
+                },
+                {
+                    "name": "height",
+                    "type": "Int",
+                    "description": "Image height in pixels.",
+                    "example": 3024
+                },
+                {
+                    "name": "imageHash",
+                    "type": "String",
+                    "description": "Hash of the image content for identification.",
+                    "example": "a1b2c3d4e5f60789"
+                },
+                {
+                    "name": "analyzedAt",
+                    "type": "Long",
+                    "description": "Unix timestamp of analysis.",
+                    "example": 1704116000000
+                }
+            ],
+            "relationships": [
+                {
+                    "column": "mediaStoreId",
+                    "references": "images(mediaStoreId)",
+                    "onDelete": "CASCADE"
+                }
+            ]
+        },
+        {
+            "name": "exif_metadata",
+            "module": "core-database",
+            "category": "Metadata",
+            "description": "Stores detailed technical metadata (EXIF) from image files.",
+            "columns": [
+                {
+                    "name": "mediaStoreId",
+                    "type": "Long",
+                    "primary_key": true,
+                    "description": "Reference to images table.",
+                    "example": 10001
+                },
+                {
+                    "name": "make",
+                    "type": "String?",
+                    "description": "Camera manufacturer.",
+                    "example": "Google"
+                },
+                {
+                    "name": "model",
+                    "type": "String?",
+                    "description": "Camera model.",
+                    "example": "Pixel 8 Pro"
+                },
+                {
+                    "name": "flash",
+                    "type": "Int?",
+                    "description": "Flash status (0: no, 1: yes).",
+                    "example": 0
+                },
+                {
+                    "name": "focalLength",
+                    "type": "Double?",
+                    "description": "Focal length in mm.",
+                    "example": 6.9
+                },
+                {
+                    "name": "iso",
+                    "type": "Int?",
+                    "description": "ISO sensitivity.",
+                    "example": 50
+                },
+                {
+                    "name": "exposureTime",
+                    "type": "Double?",
+                    "description": "Exposure time in seconds.",
+                    "example": 0.001
+                },
+                {
+                    "name": "aperture",
+                    "type": "Double?",
+                    "description": "f-number.",
+                    "example": 1.68
+                },
+                {
+                    "name": "width",
+                    "type": "Int",
+                    "description": "Image width.",
+                    "example": 4032
+                },
+                {
+                    "name": "height",
+                    "type": "Int",
+                    "description": "Image height.",
+                    "example": 3024
+                },
+                {
+                    "name": "orientation",
+                    "type": "Int",
+                    "description": "Exif orientation value.",
+                    "example": 1
+                },
+                {
+                    "name": "dateTaken",
+                    "type": "Long?",
+                    "description": "Timestamp from EXIF date-time-original.",
+                    "example": 1704107400000
+                },
+                {
+                    "name": "latitude",
+                    "type": "Double?",
+                    "description": "GPS Latitude.",
+                    "example": 37.7749
+                },
+                {
+                    "name": "longitude",
+                    "type": "Double?",
+                    "description": "GPS Longitude.",
+                    "example": -122.4194
+                },
+                {
+                    "name": "software",
+                    "type": "String?",
+                    "description": "Software used to process image.",
+                    "example": "HDR+"
+                },
+                {
+                    "name": "isEdited",
+                    "type": "Boolean",
+                    "description": "True if modification date is significantly after creation date.",
+                    "example": false
+                },
+                {
+                    "name": "hasExif",
+                    "type": "Boolean",
+                    "description": "True if file contains valid EXIF headers.",
+                    "example": true
+                }
+            ],
+            "relationships": [
+                {
+                    "column": "mediaStoreId",
+                    "references": "images(mediaStoreId)",
+                    "onDelete": "CASCADE"
+                }
+            ]
+        },
+        {
+            "name": "duplicate_groups",
+            "module": "core-database",
+            "category": "Duplicates",
+            "description": "Defines sets of images that are considered duplicates or near-duplicates.",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "Long",
+                    "primary_key": true,
+                    "auto_generate": true,
+                    "description": "Internal group identifier.",
+                    "example": 101
+                },
+                {
+                    "name": "groupHash",
+                    "type": "String",
+                    "description": "Unique hash representative of the group content.",
+                    "example": "hash_xyz_123"
+                },
+                {
+                    "name": "type",
+                    "type": "String",
+                    "description": "Match type: 'EXACT' or 'NEAR'.",
+                    "example": "EXACT"
+                },
+                {
+                    "name": "createdAt",
+                    "type": "Long",
+                    "description": "Unix timestamp of group discovery.",
+                    "example": 1704120000000
+                }
+            ],
+            "relationships": []
+        },
+        {
+            "name": "duplicate_mappings",
+            "module": "core-database",
+            "category": "Duplicates",
+            "description": "Maps individual images to duplicate groups with quality scoring.",
+            "columns": [
+                {
+                    "name": "mediaStoreId",
+                    "type": "Long",
+                    "primary_key": true,
+                    "description": "Reference to images table.",
+                    "example": 10001
+                },
+                {
+                    "name": "groupId",
+                    "type": "Long",
+                    "primary_key": true,
+                    "description": "Reference to duplicate_groups table.",
+                    "example": 101
+                },
+                {
+                    "name": "isOriginal",
+                    "type": "Boolean",
+                    "description": "Recommendation toggle for the 'keep' photo.",
+                    "example": true
+                },
+                {
+                    "name": "score",
+                    "type": "Float",
+                    "description": "Quality score (0-1) used to select the best original.",
+                    "example": 0.95
+                }
+            ],
+            "relationships": [
+                {
+                    "column": "mediaStoreId",
+                    "references": "images(mediaStoreId)",
+                    "onDelete": "CASCADE"
+                },
+                {
+                    "column": "groupId",
+                    "references": "duplicate_groups(id)",
+                    "onDelete": "CASCADE"
+                }
+            ]
+        },
+        {
+            "name": "cleanup_candidates",
+            "module": "core-database",
+            "category": "Storage",
+            "description": "Stores images identified as good candidates for deletion to save space.",
+            "columns": [
+                {
+                    "name": "mediaStoreId",
+                    "type": "Long",
+                    "primary_key": true,
+                    "description": "Reference to images table.",
+                    "example": 10005
+                },
+                {
+                    "name": "reason",
+                    "type": "String",
+                    "description": "Why this image is a candidate ('LARGE', 'DUPLICATE', 'SCREENSHOT', 'BLURRY').",
+                    "example": "SCREENSHOT"
+                },
+                {
+                    "name": "reclaimableSize",
+                    "type": "Long",
+                    "description": "File size in bytes that would be freed.",
+                    "example": 2500000
+                },
+                {
+                    "name": "suggestion",
+                    "type": "String",
+                    "description": "Recommended action ('DELETE', 'ARCHIVE').",
+                    "example": "DELETE"
+                },
+                {
+                    "name": "identifiedAt",
+                    "type": "Long",
+                    "description": "Unix timestamp of identification.",
+                    "example": 1704121000000
+                }
+            ],
+            "relationships": [
+                {
+                    "column": "mediaStoreId",
+                    "references": "images(mediaStoreId)",
+                    "onDelete": "CASCADE"
+                }
+            ]
+        },
+        {
+            "name": "vault_entries",
+            "module": "core-database",
+            "category": "Vault",
+            "description": "Tracks images moved into the encrypted private vault.",
+            "columns": [
+                {
+                    "name": "mediaStoreId",
+                    "type": "Long",
+                    "primary_key": true,
+                    "description": "Reference to images table.",
+                    "example": 10006
+                },
+                {
+                    "name": "originalPath",
+                    "type": "String",
+                    "description": "Path to the image before it was moved to the vault.",
+                    "example": "/storage/emulated/0/DCIM/Camera/IMG_SENSITIVE.jpg"
+                },
+                {
+                    "name": "vaultPath",
+                    "type": "String",
+                    "description": "Current path within the private encrypted folder.",
+                    "example": "vault/encrypted_abc123"
+                },
+                {
+                    "name": "movedAt",
+                    "type": "Long",
+                    "description": "Unix timestamp when moved to vault.",
+                    "example": 1704125000000
+                },
+                {
+                    "name": "isLocked",
+                    "type": "Boolean",
+                    "description": "Current locking status.",
+                    "example": true
+                }
+            ],
+            "relationships": [
+                {
+                    "column": "mediaStoreId",
+                    "references": "images(mediaStoreId)",
+                    "onDelete": "CASCADE"
+                }
+            ]
+        },
+        {
+            "name": "smart_album_rules",
+            "module": "core-database",
+            "category": "Organization",
+            "description": "User-defined or system-generated rules for dynamically grouping photos.",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "Long",
+                    "primary_key": true,
+                    "auto_generate": true,
+                    "description": "Internal rule identifier.",
+                    "example": 201
+                },
+                {
+                    "name": "name",
+                    "type": "String",
+                    "description": "Name of the smart album.",
+                    "example": "Old Screenshots"
+                },
+                {
+                    "name": "description",
+                    "type": "String",
+                    "description": "Human-readable description of what the rule does.",
+                    "example": "Screenshots older than 3 months."
+                },
+                {
+                    "name": "ruleType",
+                    "type": "String",
+                    "description": "Type of filtering logic ('SCREENSHOT', 'DATE_RANGE', etc.).",
+                    "example": "SCREENSHOT"
+                },
+                {
+                    "name": "configurationJson",
+                    "type": "String",
+                    "description": "JSON string containing rule parameters (e.g., date offsets).",
+                    "example": "{\"days_ago\": 90}"
+                },
+                {
+                    "name": "isEnabled",
+                    "type": "Boolean",
+                    "description": "Whether the rule is currently active.",
+                    "example": true
+                },
+                {
+                    "name": "createdAt",
+                    "type": "Long",
+                    "description": "Unix timestamp of rule creation.",
+                    "example": 1704100000000
+                }
+            ],
+            "relationships": []
+        },
+        {
+            "name": "worker_history",
+            "module": "core-database",
+            "category": "System",
+            "description": "Logs background processing runs by WorkManager.",
+            "columns": [
+                {
+                    "name": "id",
+                    "type": "Long",
+                    "primary_key": true,
+                    "auto_generate": true,
+                    "description": "Execution log identifier.",
+                    "example": 500
+                },
+                {
+                    "name": "startTime",
+                    "type": "Long",
+                    "description": "Unix timestamp when job started.",
+                    "example": 1704130000000
+                },
+                {
+                    "name": "endTime",
+                    "type": "Long?",
+                    "description": "Unix timestamp when job finished.",
+                    "example": 1704130600000
+                },
+                {
+                    "name": "durationMs",
+                    "type": "Long?",
+                    "description": "Total execution duration in milliseconds.",
+                    "example": 600000
+                },
+                {
+                    "name": "status",
+                    "type": "Enum (String)",
+                    "description": "Final status: 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED'.",
+                    "example": "COMPLETED"
+                },
+                {
+                    "name": "imagesProcessedOcr",
+                    "type": "Int",
+                    "description": "Number of images OCR'd in this run.",
+                    "example": 15
+                },
+                {
+                    "name": "imagesProcessedBarcode",
+                    "type": "Int",
+                    "description": "Number of images scanned for barcodes.",
+                    "example": 5
+                },
+                {
+                    "name": "imagesProcessedLabel",
+                    "type": "Int",
+                    "description": "Number of images labeled.",
+                    "example": 20
+                },
+                {
+                    "name": "errorMessage",
+                    "type": "String?",
+                    "description": "Failure details if status is FAILED.",
+                    "example": null
+                },
+                {
+                    "name": "isScheduledRun",
+                    "type": "Boolean",
+                    "description": "True if triggered by system alarm, False if manual.",
+                    "example": true
+                }
+            ],
+            "relationships": []
+        }
+    ]
+}
