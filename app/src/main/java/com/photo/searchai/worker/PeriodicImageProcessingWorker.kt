@@ -80,11 +80,15 @@ constructor(
     private var barcodeProcessed = 0
     private var labelProcessed = 0
 
+    override suspend fun getForegroundInfo(): ForegroundInfo {
+        return createForegroundInfo("Starting background processing...", 0)
+    }
+
     override suspend fun doWork(): Result =
             withContext(Dispatchers.IO) {
                 try {
                     createNotificationChannel()
-                    setForeground(createForegroundInfo("Starting background processing...", 0))
+                    setForeground(getForegroundInfo())
 
                     // Record work started
                     scheduledWorkDataStore.recordRunStarted()

@@ -11,8 +11,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import com.photo.searchai.R
-import com.photo.searchai.data.datastore.OcrProgressDataStore
-import com.photo.searchai.data.datastore.ProcessingStage
 import com.photo.searchai.core.database.dao.BarcodeDao
 import com.photo.searchai.core.database.dao.FaceDao
 import com.photo.searchai.core.database.dao.ImageDao
@@ -24,12 +22,14 @@ import com.photo.searchai.core.database.entity.FaceEntity
 import com.photo.searchai.core.database.entity.ImageLabelEntity
 import com.photo.searchai.core.database.entity.ImageQualityEntity
 import com.photo.searchai.core.database.entity.OcrTextEntity
+import com.photo.searchai.core.opencv.ImageQualityAnalyzer
+import com.photo.searchai.data.datastore.OcrProgressDataStore
+import com.photo.searchai.data.datastore.ProcessingStage
 import com.photo.searchai.datasource.PhotoDataSource
 import com.photo.searchai.ocr.BarcodeProcessor
 import com.photo.searchai.ocr.FaceDetectionProcessor
 import com.photo.searchai.ocr.ImageLabelProcessor
 import com.photo.searchai.ocr.OcrProcessor
-import com.photo.searchai.core.opencv.ImageQualityAnalyzer
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
@@ -72,11 +72,15 @@ constructor(
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
 
+    override suspend fun getForegroundInfo(): ForegroundInfo {
+        return createForegroundInfo("Starting...", 0, 0, ProcessingStage.IDLE)
+    }
+
     override suspend fun doWork(): Result =
             withContext(Dispatchers.IO) {
                 try {
                     createNotificationChannel()
-                    setForeground(createForegroundInfo("Starting...", 0, 0, ProcessingStage.IDLE))
+                    setForeground(getForegroundInfo())
 
                     // Loop until all images are fully processed
                     // This handles new images added during processing
@@ -441,37 +445,45 @@ constructor(
 
                 val pending = total - parsed
                 progressDataStore.updateQualityProgress(total, parsed, pending)
-                updateNotification("Quality Analysis", parsed, total, ProcessingStage.QUALITY_ANALYSIS)
+                updateNotification(
+                        "Quality Analysis",
+                        parsed,
+                        total,
+                        ProcessingStage.QUALITY_ANALYSIS
+                )
             }
         }
     }
 
     private suspend fun processQualityForImage(mediaStoreId: Long): Boolean {
         try {
-            val path = photoDataSource.getImagePath(mediaStoreId)
-                ?: run {
-                    imageDao.markAsQualityParsed(mediaStoreId)
-                    return false
-                }
+            val path =
+                    photoDataSource.getImagePath(mediaStoreId)
+                            ?: run {
+                                imageDao.markAsQualityParsed(mediaStoreId)
+                                return false
+                            }
 
-            val bitmap = photoDataSource.getScaledBitmap(path)
-                ?: run {
-                    imageDao.markAsQualityParsed(mediaStoreId)
-                    return false
-                }
+            val bitmap =
+                    photoDataSource.getScaledBitmap(path)
+                            ?: run {
+                                imageDao.markAsQualityParsed(mediaStoreId)
+                                return false
+                            }
 
             try {
                 val qualityResult = imageQualityAnalyzer.analyze(bitmap)
-                val entity = ImageQualityEntity(
-                    mediaStoreId = mediaStoreId,
-                    blurScore = qualityResult.blurScore,
-                    brightnessScore = qualityResult.brightnessScore,
-                    contrastScore = qualityResult.contrastScore,
-                    overexposedRatio = qualityResult.overexposedRatio,
-                    width = qualityResult.width,
-                    height = qualityResult.height,
-                    imageHash = qualityResult.imageHash
-                )
+                val entity =
+                        ImageQualityEntity(
+                                mediaStoreId = mediaStoreId,
+                                blurScore = qualityResult.blurScore,
+                                brightnessScore = qualityResult.brightnessScore,
+                                contrastScore = qualityResult.contrastScore,
+                                overexposedRatio = qualityResult.overexposedRatio,
+                                width = qualityResult.width,
+                                height = qualityResult.height,
+                                imageHash = qualityResult.imageHash
+                        )
                 imageQualityDao.insertQuality(entity)
                 imageDao.markAsQualityParsed(mediaStoreId)
                 return true
