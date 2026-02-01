@@ -120,7 +120,23 @@ interface ImageDao {
 
     /** Get count of fully processed images (all stages done). */
     @Query(
-            "SELECT COUNT(*) FROM images WHERE parsed = 1 AND barcodeParsed = 1 AND labelParsed = 1 AND faceParsed = 1 AND qualityParsed = 1"
+            "SELECT COUNT(*) FROM images WHERE parsed = 1 AND barcodeParsed = 1 AND labelParsed = 1 AND faceParsed = 1 AND qualityParsed = 1 AND metadataParsed = 1"
     )
     fun getFullyProcessedCountFlow(): Flow<Int>
+
+    /** Get IDs of images where metadata extraction is not done, limited to batch size. */
+    @Query("SELECT mediaStoreId FROM images WHERE metadataParsed = 0 LIMIT :limit")
+    suspend fun getUnparsedMetadataImageIds(limit: Int): List<Long>
+
+    /** Mark an image as metadata parsed. */
+    @Query("UPDATE images SET metadataParsed = 1 WHERE mediaStoreId = :id")
+    suspend fun markAsMetadataParsed(id: Long): Int
+
+    /** Get count of metadata parsed images as Flow. */
+    @Query("SELECT COUNT(*) FROM images WHERE metadataParsed = 1")
+    fun getMetadataParsedCountFlow(): Flow<Int>
+
+    /** Get count of metadata unparsed images as Flow. */
+    @Query("SELECT COUNT(*) FROM images WHERE metadataParsed = 0")
+    fun getMetadataPendingCountFlow(): Flow<Int>
 }

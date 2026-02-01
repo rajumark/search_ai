@@ -25,6 +25,14 @@ import com.photo.searchai.ui.screens.FaceSearchScreen
 import com.photo.searchai.ui.screens.FaceSearchViewModel
 import com.photo.searchai.ui.search.SearchByTextScreen
 import com.photo.searchai.ui.search.SearchViewModel
+import com.photo.searchai.feature.gallery_insights.GalleryInsightsScreen
+import com.photo.searchai.feature.gallery_insights.GalleryInsightsViewModel
+import com.photo.searchai.feature.smart_albums.SmartAlbumsScreen
+import com.photo.searchai.feature.smart_albums.SmartAlbumsViewModel
+import com.photo.searchai.feature.storage_cleanup.StorageCleanupScreen
+import com.photo.searchai.feature.storage_cleanup.StorageCleanupViewModel
+import com.photo.searchai.feature.media_vault.MediaVaultScreen
+import com.photo.searchai.feature.media_vault.MediaVaultViewModel
 
 @Composable
 fun NavGraph(
@@ -70,6 +78,18 @@ fun NavGraph(
                     },
                     onNavigateToBatterySettings = {
                         navController.navigate(NavRoutes.BatterySettings.route)
+                    },
+                    onNavigateToGalleryInsights = {
+                        navController.navigate(NavRoutes.GalleryInsights.route)
+                    },
+                    onNavigateToSmartAlbums = {
+                        navController.navigate(NavRoutes.SmartAlbums.route)
+                    },
+                    onNavigateToStorageCleanup = {
+                        navController.navigate(NavRoutes.StorageCleanup.route)
+                    },
+                    onNavigateToMediaVault = {
+                        navController.navigate(NavRoutes.MediaVault.route)
                     }
             )
         }
@@ -114,6 +134,40 @@ fun NavGraph(
 
         composable(NavRoutes.BatterySettings.route) {
             BatteryOptimizationScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(NavRoutes.GalleryInsights.route) {
+            val viewModel: GalleryInsightsViewModel = hiltViewModel()
+            GalleryInsightsScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(NavRoutes.SmartAlbums.route) {
+            val viewModel: SmartAlbumsViewModel = hiltViewModel()
+            SmartAlbumsScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() },
+                onAlbumClick = { /* TODO: Navigate to album detail */ },
+                onCreateAlbumClick = { /* TODO: Navigate to rule editor */ }
+            )
+        }
+
+        composable(NavRoutes.StorageCleanup.route) {
+            val viewModel: StorageCleanupViewModel = hiltViewModel()
+            StorageCleanupScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(NavRoutes.MediaVault.route) {
+            val viewModel: MediaVaultViewModel = hiltViewModel()
+            MediaVaultScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() }
+            )
         }
 
         composable(

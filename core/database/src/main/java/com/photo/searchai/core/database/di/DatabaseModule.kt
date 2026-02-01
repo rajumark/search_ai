@@ -3,11 +3,15 @@ package com.photo.searchai.core.database.di
 import android.content.Context
 import androidx.room.Room
 import com.photo.searchai.core.database.AppDatabase
-import com.photo.searchai.core.database.dao.BarcodeDao
+import com.photo.searchai.core.database.dao.CleanupDao
+import com.photo.searchai.core.database.dao.DuplicateDao
+import com.photo.searchai.core.database.dao.ExifDao
 import com.photo.searchai.core.database.dao.FaceDao
 import com.photo.searchai.core.database.dao.ImageDao
-import com.photo.searchai.core.database.dao.ImageLabelDao
+import com.photo.searchai.core.database.dao.ImageQualityDao
 import com.photo.searchai.core.database.dao.OcrTextDao
+import com.photo.searchai.core.database.dao.SmartAlbumDao
+import com.photo.searchai.core.database.dao.VaultDao
 import com.photo.searchai.core.database.dao.WorkerHistoryDao
 import dagger.Module
 import dagger.Provides
@@ -27,7 +31,9 @@ object DatabaseModule {
                 .addMigrations(
                         AppDatabase.MIGRATION_1_2,
                         AppDatabase.MIGRATION_2_3,
-                        AppDatabase.MIGRATION_3_4
+                        AppDatabase.MIGRATION_3_4,
+                        AppDatabase.MIGRATION_4_5,
+                        AppDatabase.MIGRATION_5_6
                 )
                 .build()
     }
@@ -64,7 +70,43 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun provideImageQualityDao(database: AppDatabase): ImageQualityDao {
+        return database.imageQualityDao()
+    }
+
+    @Provides
+    @Singleton
     fun provideWorkerHistoryDao(database: AppDatabase): WorkerHistoryDao {
         return database.workerHistoryDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideExifDao(database: AppDatabase): ExifDao {
+        return database.exifDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideDuplicateDao(database: AppDatabase): DuplicateDao {
+        return database.duplicateDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideSmartAlbumDao(database: AppDatabase): SmartAlbumDao {
+        return database.smartAlbumDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideCleanupDao(database: AppDatabase): CleanupDao {
+        return database.cleanupDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideVaultDao(database: AppDatabase): VaultDao {
+        return database.vaultDao()
     }
 }

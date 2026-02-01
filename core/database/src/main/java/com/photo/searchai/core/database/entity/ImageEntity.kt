@@ -32,7 +32,9 @@ data class ImageEntity(
         // Face detection completed
         val faceParsed: Boolean = false,
         // Quality analysis completed
-        val qualityParsed: Boolean = false
+        val qualityParsed: Boolean = false,
+        // Metadata extraction completed
+        val metadataParsed: Boolean = false
 ) {
     // Helper property for checking if OCR is done (uses 'parsed' for backward compatibility)
     val ocrParsed: Boolean
@@ -40,5 +42,5 @@ data class ImageEntity(
 
     // Check if all processing is complete
     val fullyProcessed: Boolean
-        get() = parsed && barcodeParsed && labelParsed && faceParsed && qualityParsed
+        get() = parsed && barcodeParsed && labelParsed && faceParsed && qualityParsed && metadataParsed
 }

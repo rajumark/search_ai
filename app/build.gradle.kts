@@ -224,6 +224,32 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
     
+    // Core Modules
+    implementation(project(":core:common"))
+    implementation(project(":core:database"))
+    implementation(project(":core:datastore"))
+    implementation(project(":core:ml"))
+    implementation(project(":core:opencv"))
+    implementation(project(":core:work"))
+    implementation(project(":core:media_index"))
+    implementation(project(":core:metadata_index"))
+    implementation(project(":core:rules_engine"))
+    implementation(project(":core:cleanup_engine"))
+    implementation(project(":core:duplicate_engine"))
+    
+    // Feature Modules
+    implementation(project(":feature:ocr"))
+    implementation(project(":feature:face"))
+    implementation(project(":feature:barcode"))
+    implementation(project(":feature:image_label"))
+    implementation(project(":feature:search"))
+    implementation(project(":feature:permission"))
+    implementation(project(":feature:battery"))
+    implementation(project(":feature:gallery_insights"))
+    implementation(project(":feature:smart_albums"))
+    implementation(project(":feature:storage_cleanup"))
+    implementation(project(":feature:media_vault"))
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

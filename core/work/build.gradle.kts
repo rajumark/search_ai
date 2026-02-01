@@ -54,6 +54,11 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:datastore"))
     implementation(project(":core:ml"))
+    implementation(project(":core:media_index"))
+    implementation(project(":core:metadata_index"))
+    implementation(project(":core:rules_engine"))
+    implementation(project(":core:cleanup_engine"))
+    implementation(project(":core:duplicate_engine"))
     
     // Testing
     testImplementation(libs.junit)

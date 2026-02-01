@@ -22,5 +22,9 @@ class PhotoSearchAIApplication : Application(), Configuration.Provider {
         // Schedule periodic background processing every 6 hours
         // This runs once on app start and will persist even after app closes
         workManagerHelper.schedulePeriodicProcessing()
+        
+        // Start metadata processing chain and schedule organization tasks
+        workManagerHelper.enqueueMetadataProcessing()
+        workManagerHelper.scheduleOrganizationTasks()
     }
 }

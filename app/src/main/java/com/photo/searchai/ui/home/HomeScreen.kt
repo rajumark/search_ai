@@ -58,6 +58,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material.icons.rounded.CleaningServices
+import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Collections
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -85,7 +89,11 @@ fun HomeScreen(
         onNavigateToBarcodePhotos: () -> Unit = {},
         onNavigateToScanner: () -> Unit = {},
         onNavigateToRefreshHistory: () -> Unit = {},
-        onNavigateToBatterySettings: () -> Unit = {}
+        onNavigateToBatterySettings: () -> Unit = {},
+        onNavigateToGalleryInsights: () -> Unit = {},
+        onNavigateToSmartAlbums: () -> Unit = {},
+        onNavigateToStorageCleanup: () -> Unit = {},
+        onNavigateToMediaVault: () -> Unit = {}
 ) {
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -120,6 +128,22 @@ fun HomeScreen(
                                 onNavigateToBatterySettings = {
                                         scope.launch { drawerState.close() }
                                         onNavigateToBatterySettings()
+                                },
+                                onNavigateToGalleryInsights = {
+                                        scope.launch { drawerState.close() }
+                                        onNavigateToGalleryInsights()
+                                },
+                                onNavigateToSmartAlbums = {
+                                        scope.launch { drawerState.close() }
+                                        onNavigateToSmartAlbums()
+                                },
+                                onNavigateToStorageCleanup = {
+                                        scope.launch { drawerState.close() }
+                                        onNavigateToStorageCleanup()
+                                },
+                                onNavigateToMediaVault = {
+                                        scope.launch { drawerState.close() }
+                                        onNavigateToMediaVault()
                                 }
                         )
                 }
@@ -206,7 +230,6 @@ fun HomeScreen(
                                                                 uiState.averageTimePerImageMs
                                                 )
                                                 
-                                                // Quality Analysis Card
                                                 ProcessingCard(
                                                         icon = Icons.Rounded.PhotoFilter,
                                                         title = "Quality Analysis",
@@ -215,6 +238,49 @@ fun HomeScreen(
                                                         averageTimePerImageMs =
                                                                 uiState.averageTimePerImageMs
                                                 )
+
+                                                Text(
+                                                        text = "Insights & Tools",
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        fontWeight = FontWeight.Bold,
+                                                        modifier = Modifier.padding(top = 8.dp)
+                                                )
+
+                                                Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                                ) {
+                                                        QuickActionCard(
+                                                                title = "Insights",
+                                                                icon = Icons.Rounded.Analytics,
+                                                                onClick = onNavigateToGalleryInsights,
+                                                                modifier = Modifier.weight(1f)
+                                                        )
+                                                        QuickActionCard(
+                                                                title = "Smart Albums",
+                                                                icon = Icons.Rounded.AutoAwesome,
+                                                                onClick = onNavigateToSmartAlbums,
+                                                                modifier = Modifier.weight(1f)
+                                                        )
+                                                }
+
+                                                Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                                ) {
+                                                        QuickActionCard(
+                                                                title = "Cleanup",
+                                                                icon = Icons.Rounded.CleaningServices,
+                                                                onClick = onNavigateToStorageCleanup,
+                                                                modifier = Modifier.weight(1f)
+                                                        )
+                                                        QuickActionCard(
+                                                                title = "Vault",
+                                                                icon = Icons.Rounded.Lock,
+                                                                onClick = onNavigateToMediaVault,
+                                                                modifier = Modifier.weight(1f)
+                                                        )
+                                                }
 
                                                 Spacer(modifier = Modifier.height(16.dp))
                                         }
@@ -891,15 +957,13 @@ private fun CenterContent(totalImages: Int, parsedImages: Int, onOpenDrawer: () 
 }
 
 @Composable
-private fun NavigationDrawerContent(
-        totalImages: Int,
-        parsedImages: Int,
-        onNavigateToSearch: () -> Unit,
-        onNavigateToFaceSearch: () -> Unit,
-        onNavigateToBarcodePhotos: () -> Unit,
         onNavigateToScanner: () -> Unit,
         onNavigateToRefreshHistory: () -> Unit,
-        onNavigateToBatterySettings: () -> Unit
+        onNavigateToBatterySettings: () -> Unit,
+        onNavigateToGalleryInsights: () -> Unit,
+        onNavigateToSmartAlbums: () -> Unit,
+        onNavigateToStorageCleanup: () -> Unit,
+        onNavigateToMediaVault: () -> Unit
 ) {
         ModalDrawerSheet(modifier = Modifier.width(300.dp)) {
                 Column(
@@ -985,6 +1049,51 @@ private fun NavigationDrawerContent(
                         subtitle = "Coming soon",
                         enabled = false,
                         onClick = onNavigateToScanner
+                )
+
+                HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 16.dp, horizontal = 28.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                )
+
+                Text(
+                        text = "NEW FEATURES",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
+                        fontWeight = FontWeight.Bold
+                )
+
+                DrawerMenuItem(
+                        icon = Icons.Rounded.Analytics,
+                        label = "Gallery Insights",
+                        subtitle = "Metadata analysis",
+                        enabled = true,
+                        onClick = onNavigateToGalleryInsights
+                )
+
+                DrawerMenuItem(
+                        icon = Icons.Rounded.AutoAwesome,
+                        label = "Smart Albums",
+                        subtitle = "Rule-based albums",
+                        enabled = true,
+                        onClick = onNavigateToSmartAlbums
+                )
+
+                DrawerMenuItem(
+                        icon = Icons.Rounded.CleaningServices,
+                        label = "Storage Cleanup",
+                        subtitle = "Free up space",
+                        enabled = true,
+                        onClick = onNavigateToStorageCleanup
+                )
+
+                DrawerMenuItem(
+                        icon = Icons.Rounded.Lock,
+                        label = "Media Vault",
+                        subtitle = "Private photos",
+                        enabled = true,
+                        onClick = onNavigateToMediaVault
                 )
 
                 DrawerMenuItem(
@@ -1315,6 +1424,55 @@ private fun StageIndicator(icon: ImageVector, stageProgress: StageProgress, stag
                                         MaterialTheme.colorScheme.onSurfaceVariant.copy(
                                                 alpha = 0.6f
                                         )
+                        )
+                }
+        }
+}
+
+@Composable
+private fun QuickActionCard(
+        title: String,
+        icon: ImageVector,
+        onClick: () -> Unit,
+        modifier: Modifier = Modifier
+) {
+        Card(
+                onClick = onClick,
+                modifier = modifier.height(110.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+                Column(
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                ) {
+                        Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.size(40.dp)
+                        ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                                imageVector = icon,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(24.dp)
+                                        )
+                                }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                                text = title,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
                         )
                 }
         }

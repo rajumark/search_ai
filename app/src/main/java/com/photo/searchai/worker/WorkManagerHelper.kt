@@ -5,11 +5,15 @@ import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.photo.searchai.core.work.MediaSyncWorker
+import com.photo.searchai.core.work.MetadataWorker
+import com.photo.searchai.core.work.OrganizationWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -135,6 +139,48 @@ class WorkManagerHelper @Inject constructor(@ApplicationContext private val cont
                 "manual_periodic_processing",
                 ExistingWorkPolicy.KEEP,
                 workRequest
+        )
+    }
+
+    /**
+     * Enqueue metadata extraction and organization tasks.
+     * Usually called after a MediaSyncWorker completes or on app startup.
+     */
+    fun enqueueMetadataProcessing() {
+        val syncRequest = OneTimeWorkRequestBuilder<MediaSyncWorker>()
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .build()
+            
+        val metadataRequest = OneTimeWorkRequestBuilder<MetadataWorker>()
+            .build()
+            
+        val organizationRequest = OneTimeWorkRequestBuilder<OrganizationWorker>()
+            .setConstraints(Constraints.Builder().setRequiresBatteryNotLow(true).build())
+            .build()
+
+        workManager.beginUniqueWork("metadata_processing_chain", ExistingWorkPolicy.KEEP, syncRequest)
+            .then(metadataRequest)
+            .then(organizationRequest)
+            .enqueue()
+    }
+
+    /**
+     * Schedule periodic organization tasks (duplicates, cleanup).
+     */
+    fun scheduleOrganizationTasks() {
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
+
+        val periodicRequest = PeriodicWorkRequestBuilder<OrganizationWorker>(24, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .addTag("periodic_organization")
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            "periodic_organization_task",
+            ExistingPeriodicWorkPolicy.KEEP,
+            periodicRequest
         )
     }
 
