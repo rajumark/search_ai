@@ -9,8 +9,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ExifDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertExif(exif: ExifEntity)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertExif(exif: ExifEntity)
 
     /** Get EXIF for a specific image. */
     @Query("SELECT * FROM exif_metadata WHERE mediaStoreId = :imageId")
@@ -20,12 +19,9 @@ interface ExifDao {
     fun getExifForImageFlow(mediaStoreId: Long): Flow<ExifEntity?>
 
     /** Get all EXIF records. */
-    @Query("SELECT * FROM exif_metadata")
-    suspend fun getAllExif(): List<ExifEntity>
+    @Query("SELECT * FROM exif_metadata") suspend fun getAllExif(): List<ExifEntity>
 
-    @Query("SELECT * FROM exif_metadata")
-    fun getAllExif(): Flow<List<ExifEntity>>
-    
-    @Query("SELECT COUNT(*) FROM exif_metadata")
-    suspend fun getExifCount(): Int
+    @Query("SELECT * FROM exif_metadata") fun getAllExifFlow(): Flow<List<ExifEntity>>
+
+    @Query("SELECT COUNT(*) FROM exif_metadata") suspend fun getExifCount(): Int
 }

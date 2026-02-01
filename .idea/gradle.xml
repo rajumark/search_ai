@@ -11,6 +11,31 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
+            <option value="$PROJECT_DIR$/core" />
+            <option value="$PROJECT_DIR$/core/cleanup_engine" />
+            <option value="$PROJECT_DIR$/core/common" />
+            <option value="$PROJECT_DIR$/core/database" />
+            <option value="$PROJECT_DIR$/core/datastore" />
+            <option value="$PROJECT_DIR$/core/duplicate_engine" />
+            <option value="$PROJECT_DIR$/core/media_index" />
+            <option value="$PROJECT_DIR$/core/metadata_index" />
+            <option value="$PROJECT_DIR$/core/ml" />
+            <option value="$PROJECT_DIR$/core/opencv" />
+            <option value="$PROJECT_DIR$/core/rules_engine" />
+            <option value="$PROJECT_DIR$/core/work" />
+            <option value="$PROJECT_DIR$/feature" />
+            <option value="$PROJECT_DIR$/feature/barcode" />
+            <option value="$PROJECT_DIR$/feature/battery" />
+            <option value="$PROJECT_DIR$/feature/face" />
+            <option value="$PROJECT_DIR$/feature/gallery_insights" />
+            <option value="$PROJECT_DIR$/feature/image_label" />
+            <option value="$PROJECT_DIR$/feature/media_vault" />
+            <option value="$PROJECT_DIR$/feature/ocr" />
+            <option value="$PROJECT_DIR$/feature/onboarding" />
+            <option value="$PROJECT_DIR$/feature/permission" />
+            <option value="$PROJECT_DIR$/feature/search" />
+            <option value="$PROJECT_DIR$/feature/smart_albums" />
+            <option value="$PROJECT_DIR$/feature/storage_cleanup" />
           </set>
         </option>
       </GradleProjectSettings>

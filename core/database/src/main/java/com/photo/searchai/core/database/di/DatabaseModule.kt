@@ -3,11 +3,13 @@ package com.photo.searchai.core.database.di
 import android.content.Context
 import androidx.room.Room
 import com.photo.searchai.core.database.AppDatabase
+import com.photo.searchai.core.database.dao.BarcodeDao
 import com.photo.searchai.core.database.dao.CleanupDao
 import com.photo.searchai.core.database.dao.DuplicateDao
 import com.photo.searchai.core.database.dao.ExifDao
 import com.photo.searchai.core.database.dao.FaceDao
 import com.photo.searchai.core.database.dao.ImageDao
+import com.photo.searchai.core.database.dao.ImageLabelDao
 import com.photo.searchai.core.database.dao.ImageQualityDao
 import com.photo.searchai.core.database.dao.OcrTextDao
 import com.photo.searchai.core.database.dao.SmartAlbumDao
