@@ -32,6 +32,7 @@ include(":core:common")
 include(":core:database")
 include(":core:datastore")
 include(":core:ml")
+include(":core:opencv")
 include(":core:work")
 
 // Feature modules
