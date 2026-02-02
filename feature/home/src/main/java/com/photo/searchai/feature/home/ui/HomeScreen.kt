@@ -1,23 +1,61 @@
 package com.photo.searchai.feature.home.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.photo.searchai.domain.model.ProcessingSnapshot
 import com.photo.searchai.feature.home.HomeViewModel
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
+fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     val ocrState by viewModel.ocrProgress.collectAsState()
     val labelingState by viewModel.labelingProgress.collectAsState()
+    val totalImages by viewModel.totalImages.collectAsState()
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Text("Background Processing", style = MaterialTheme.typography.headlineMedium)
+        Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text("Background Processing", style = MaterialTheme.typography.headlineMedium)
+                Text(
+                        text = "$totalImages images in DB",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary
+                )
+            }
+
+            val context = LocalContext.current
+            IconButton(
+                    onClick = {
+                        val intent =
+                                Intent(
+                                        Intent.ACTION_DELETE,
+                                        Uri.parse("package:" + context.packageName)
+                                )
+                        context.startActivity(intent)
+                    }
+            ) {
+                Icon(
+                        imageVector = Icons.Default.DeleteForever,
+                        contentDescription = "Uninstall App",
+                        tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
 
         ProcessingCard("OCR Feature", ocrState)

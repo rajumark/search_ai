@@ -6,10 +6,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.photo.searchai.app.ui.home.AppHome
 import com.photo.searchai.app.ui.onboarding.OnboardingScreen
 import com.photo.searchai.core.permissions.logic.PermissionManager
 import com.photo.searchai.core.permissions.ui.PermissionScreen
+import com.photo.searchai.feature.home.ui.HomeScreen
 
 @Composable
 fun AppNavHost() {
@@ -46,6 +46,6 @@ fun AppNavHost() {
             )
         }
 
-        composable<Route.Home> { AppHome() }
+        composable<Route.Home> { HomeScreen() }
     }
 }

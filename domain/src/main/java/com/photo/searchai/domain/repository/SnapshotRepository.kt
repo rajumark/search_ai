@@ -9,4 +9,5 @@ interface SnapshotRepository {
     fun getSnapshotProgress(featureType: FeatureType): Flow<ProcessingSnapshot?>
     suspend fun updateSnapshotProgress(featureType: FeatureType, processedCount: Int)
     suspend fun getLatestSnapshotSync(featureType: FeatureType): ProcessingSnapshot?
+    fun getTotalImageCount(): Flow<Int>
 }

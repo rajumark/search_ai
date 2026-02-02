@@ -18,4 +18,5 @@ interface ImageDao {
     ): List<ImageEntity>
 
     @Update suspend fun updateImage(image: ImageEntity)
+    @Query("SELECT COUNT(*) FROM images") fun getTotalCount(): kotlinx.coroutines.flow.Flow<Int>
 }

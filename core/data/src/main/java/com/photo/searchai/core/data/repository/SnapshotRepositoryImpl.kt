@@ -64,4 +64,5 @@ constructor(private val snapshotDao: SnapshotDao, private val imageDao: ImageDao
                 createdAt = entity.createdAt
         )
     }
+    override fun getTotalImageCount(): Flow<Int> = imageDao.getTotalCount()
 }
