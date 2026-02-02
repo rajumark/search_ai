@@ -29,6 +29,7 @@ ksp {
 
 dependencies {
     api(project(":core:database"))
+    implementation(libs.androidx.sqlite)
     implementation(project(":core:permission"))
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

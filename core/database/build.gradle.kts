@@ -28,6 +28,7 @@ ksp {
 }
 
 dependencies {
+    api(libs.androidx.sqlite)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.paging)

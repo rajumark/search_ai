@@ -5,13 +5,16 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RawQuery
+import androidx.sqlite.db.SupportSQLiteQuery
 import com.photo.searchai.core.database.entity.ImageEntity
 import com.photo.searchai.core.database.entity.OcrEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ImageDao {
-    @Query("SELECT * FROM images") fun getAllImages(): Flow<List<ImageEntity>>
+    @Query("SELECT * FROM images ORDER BY dateAdded DESC")
+    fun getAllImages(): Flow<List<ImageEntity>>
 
     @Query("SELECT * FROM images ORDER BY dateAdded DESC")
     fun getAllImagesPagingSource(): PagingSource<Int, ImageEntity>
@@ -40,4 +43,7 @@ interface ImageDao {
     fun getOcrProcessedCount(): Flow<Int>
 
     @Query("DELETE FROM images") suspend fun deleteAll()
+
+    @RawQuery(observedEntities = [ImageEntity::class, OcrEntity::class])
+    fun searchImagesRaw(query: SupportSQLiteQuery): Flow<List<ImageEntity>>
 }
