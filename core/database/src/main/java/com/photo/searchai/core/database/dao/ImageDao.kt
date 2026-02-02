@@ -1,8 +1,9 @@
 package com.photo.searchai.core.database.dao
 
 import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Upsert
 import com.photo.searchai.core.database.entity.ImageEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -12,7 +13,12 @@ interface ImageDao {
 
     @Query("SELECT COUNT(*) FROM images") fun getImageCount(): Flow<Int>
 
-    @Upsert suspend fun upsertImages(images: List<ImageEntity>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertImages(images: List<ImageEntity>)
+
+    @Query("SELECT id FROM images") suspend fun getAllImageIds(): List<Long>
+
+    @Query("DELETE FROM images WHERE id IN (:ids)") suspend fun deleteImagesByIds(ids: List<Long>)
 
     @Query("SELECT * FROM images WHERE isOcrProcessed = 0")
     suspend fun getPendingOcrImages(): List<ImageEntity>

@@ -25,7 +25,9 @@ constructor(
 
             // Process OCR for pending images
             val pendingImages = repository.getPendingOcrImages()
-            pendingImages.forEach { image ->
+            for (image in pendingImages) {
+                if (isStopped) break
+
                 val text = ocrProcessor.processImage(image.uri)
                 repository.updateOcrResult(image.id, text)
             }

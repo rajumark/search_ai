@@ -24,9 +24,20 @@ constructor(private val imageDao: ImageDao, @ApplicationContext private val cont
             return
         }
 
-        val images = fetchImagesFromMediaStore()
-        if (images.isNotEmpty()) {
-            imageDao.upsertImages(images)
+        val mediaStoreImages = fetchImagesFromMediaStore()
+        val mediaStoreIds = mediaStoreImages.map { it.id }.toSet()
+        val dbIds = imageDao.getAllImageIds().toSet()
+
+        // 1. Identify and delete images that no longer exist in MediaStore
+        val deletedIds = dbIds.filter { it !in mediaStoreIds }
+        if (deletedIds.isNotEmpty()) {
+            deletedIds.chunked(999).forEach { chunk -> imageDao.deleteImagesByIds(chunk) }
+        }
+
+        // 2. Identify and insert new images
+        val newImages = mediaStoreImages.filter { it.id !in dbIds }
+        if (newImages.isNotEmpty()) {
+            imageDao.insertImages(newImages)
         }
     }
 
