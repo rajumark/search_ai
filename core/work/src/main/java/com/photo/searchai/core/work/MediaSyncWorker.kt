@@ -30,14 +30,7 @@ constructor(
             return Result.success()
         }
         return try {
-            if (!PermissionChecker.hasPermission(applicationContext, PermissionType.ALL_FILES)) {
-                return Result.failure()
-            }
-
-            // Initial foreground notification
-            if (PermissionChecker.hasPermission(applicationContext, PermissionType.NOTIFICATION)) {
-                setForeground(notificationHelper.createForegroundInfo(0, 0))
-            }
+            if (isPermissionFailed()) return Result.failure()
 
             syncMedia()
             processPendingOcr()
@@ -47,6 +40,18 @@ constructor(
         } finally {
             jobLock.unlock()
         }
+    }
+
+    private suspend fun isPermissionFailed(): Boolean {
+        if (!PermissionChecker.hasPermission(applicationContext, PermissionType.ALL_FILES)) {
+            return true
+        }
+
+        // Initial foreground notification
+        if (PermissionChecker.hasPermission(applicationContext, PermissionType.NOTIFICATION)) {
+            setForeground(notificationHelper.createForegroundInfo(0, 0))
+        }
+        return false
     }
 
     override suspend fun getForegroundInfo(): ForegroundInfo {
