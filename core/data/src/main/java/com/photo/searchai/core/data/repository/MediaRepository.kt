@@ -55,7 +55,7 @@ constructor(private val imageDao: ImageDao, @ApplicationContext private val cont
     suspend fun getPendingOcrImages(): List<ImageEntity> = imageDao.getPendingOcrImages()
 
     suspend fun updateOcrResult(id: Long, text: String) {
-        imageDao.updateOcrResult(id, text)
+        imageDao.insertOcrResult(com.photo.searchai.core.database.entity.OcrEntity(id, text, true))
     }
 
     private fun fetchImagesFromMediaStore(): List<ImageEntity> {

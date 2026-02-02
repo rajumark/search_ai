@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.photo.searchai.core.database.entity.ImageEntity
+import com.photo.searchai.core.database.entity.OcrEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -24,13 +25,18 @@ interface ImageDao {
 
     @Query("DELETE FROM images WHERE id IN (:ids)") suspend fun deleteImagesByIds(ids: List<Long>)
 
-    @Query("SELECT * FROM images WHERE isOcrProcessed = 0")
+    @Query(
+            """
+        SELECT * FROM images 
+        WHERE id NOT IN (SELECT imageId FROM ocr_results WHERE isOcrProcessed = 1)
+    """
+    )
     suspend fun getPendingOcrImages(): List<ImageEntity>
 
-    @Query("UPDATE images SET ocrText = :ocrText, isOcrProcessed = 1 WHERE id = :id")
-    suspend fun updateOcrResult(id: Long, ocrText: String)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOcrResult(ocrEntity: OcrEntity)
 
-    @Query("SELECT COUNT(*) FROM images WHERE isOcrProcessed = 1")
+    @Query("SELECT COUNT(*) FROM ocr_results WHERE isOcrProcessed = 1")
     fun getOcrProcessedCount(): Flow<Int>
 
     @Query("DELETE FROM images") suspend fun deleteAll()
