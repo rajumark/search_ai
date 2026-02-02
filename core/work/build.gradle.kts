@@ -29,7 +29,9 @@ ksp {
 
 dependencies {
     implementation(project(":core:data"))
+    implementation(project(":core:database"))
     implementation(project(":core:permission"))
+    implementation(project(":core:ocr"))
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

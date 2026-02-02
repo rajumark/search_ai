@@ -17,6 +17,7 @@ class MediaRepository
 @Inject
 constructor(private val imageDao: ImageDao, @ApplicationContext private val context: Context) {
     fun getImageCountFlow(): Flow<Int> = imageDao.getImageCount()
+    fun getOcrProcessedCountFlow(): Flow<Int> = imageDao.getOcrProcessedCount()
 
     suspend fun syncImages() {
         if (!PermissionChecker.hasPermission(context, PermissionType.ALL_FILES)) {
@@ -27,6 +28,12 @@ constructor(private val imageDao: ImageDao, @ApplicationContext private val cont
         if (images.isNotEmpty()) {
             imageDao.upsertImages(images)
         }
+    }
+
+    suspend fun getPendingOcrImages(): List<ImageEntity> = imageDao.getPendingOcrImages()
+
+    suspend fun updateOcrResult(id: Long, text: String) {
+        imageDao.updateOcrResult(id, text)
     }
 
     private fun fetchImagesFromMediaStore(): List<ImageEntity> {

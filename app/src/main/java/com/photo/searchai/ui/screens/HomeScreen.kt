@@ -21,46 +21,56 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
-    val imageCount by viewModel.imageCount.collectAsState()
+        val imageCount by viewModel.imageCount.collectAsState()
+        val ocrCount by viewModel.ocrCount.collectAsState()
 
-    Scaffold(
-            topBar = {
-                TopAppBar(
-                        title = { Text("Photo Search AI") },
-                        actions = {
-                            IconButton(onClick = { viewModel.refreshImages() }) {
-                                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                            }
+        Scaffold(
+                topBar = {
+                        TopAppBar(
+                                title = { Text("Photo Search AI") },
+                                actions = {
+                                        IconButton(onClick = { viewModel.refreshImages() }) {
+                                                Icon(
+                                                        Icons.Default.Refresh,
+                                                        contentDescription = "Refresh"
+                                                )
+                                        }
+                                }
+                        )
+                }
+        ) { paddingValues ->
+                Box(
+                        modifier = Modifier.fillMaxSize().padding(paddingValues),
+                        contentAlignment = Alignment.Center
+                ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                        text = "Total Images Found",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.secondary
+                                )
+                                Text(
+                                        text = "$imageCount",
+                                        style =
+                                                MaterialTheme.typography.displayLarge.copy(
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 72.sp
+                                                ),
+                                        color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.padding(16.dp))
+                                Text(
+                                        text = "OCR Indexed: $ocrCount",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                )
+                                Spacer(modifier = Modifier.padding(8.dp))
+                                Text(
+                                        text = "Your library is being indexed in background",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.outline
+                                )
                         }
-                )
-            }
-    ) { paddingValues ->
-        Box(
-                modifier = Modifier.fillMaxSize().padding(paddingValues),
-                contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                        text = "Total Images Found",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.secondary
-                )
-                Text(
-                        text = "$imageCount",
-                        style =
-                                MaterialTheme.typography.displayLarge.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 72.sp
-                                ),
-                        color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.padding(16.dp))
-                Text(
-                        text = "Your library is being indexed in background",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline
-                )
-            }
+                }
         }
-    }
 }

@@ -9,5 +9,7 @@ data class ImageEntity(
         val uri: String,
         val name: String,
         val dateAdded: Long,
-        val size: Long
+        val size: Long,
+        val ocrText: String? = null,
+        val isOcrProcessed: Boolean = false
 )

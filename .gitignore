@@ -17,3 +17,4 @@ core/permission/build
 core/database/build
 core/data/build
 core/work/build
+core/ocr/build

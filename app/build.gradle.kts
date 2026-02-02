@@ -51,6 +51,7 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:data"))
     implementation(project(":core:work"))
+    implementation(project(":core:ocr"))
     
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

@@ -28,7 +28,7 @@ ksp {
 }
 
 dependencies {
-    implementation(project(":core:database"))
+    api(project(":core:database"))
     implementation(project(":core:permission"))
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

@@ -27,6 +27,15 @@ constructor(
                             initialValue = 0
                     )
 
+    val ocrCount: StateFlow<Int> =
+            mediaRepository
+                    .getOcrProcessedCountFlow()
+                    .stateIn(
+                            scope = viewModelScope,
+                            started = SharingStarted.WhileSubscribed(5000),
+                            initialValue = 0
+                    )
+
     init {
         // Run one-time sync and schedule periodic sync when ViewModel is initialized
         mediaWorkScheduler.runOneTimeSync()

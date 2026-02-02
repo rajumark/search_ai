@@ -14,5 +14,14 @@ interface ImageDao {
 
     @Upsert suspend fun upsertImages(images: List<ImageEntity>)
 
+    @Query("SELECT * FROM images WHERE isOcrProcessed = 0")
+    suspend fun getPendingOcrImages(): List<ImageEntity>
+
+    @Query("UPDATE images SET ocrText = :ocrText, isOcrProcessed = 1 WHERE id = :id")
+    suspend fun updateOcrResult(id: Long, ocrText: String)
+
+    @Query("SELECT COUNT(*) FROM images WHERE isOcrProcessed = 1")
+    fun getOcrProcessedCount(): Flow<Int>
+
     @Query("DELETE FROM images") suspend fun deleteAll()
 }
