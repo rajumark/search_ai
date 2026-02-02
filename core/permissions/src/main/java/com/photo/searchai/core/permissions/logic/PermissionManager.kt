@@ -1,5 +1,6 @@
 package com.photo.searchai.core.permissions.logic
 
+import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -24,5 +25,13 @@ class PermissionManager {
     fun isBatteryOptimized(context: Context): Boolean {
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         return powerManager.isIgnoringBatteryOptimizations(context.packageName)
+    }
+
+    fun isNotificationGranted(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            isPermissionGranted(context, Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            true
+        }
     }
 }

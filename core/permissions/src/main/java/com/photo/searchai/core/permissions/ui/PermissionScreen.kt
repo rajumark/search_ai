@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -83,15 +84,12 @@ fun PermissionScreen(onAllPermissionsGranted: () -> Unit) {
         val isBatteryOptimized =
                 remember(refreshKey) { permissionManager.isBatteryOptimized(context) }
 
-        // Check if critical permissions are granted to potentially auto-navigate or enable a
-        // "Continue"
-        // button
-        // The user asked for specific permissions, battery is optional.
-        // If Storage and Notification (if applicable) are granted, we can proceed.
-        // However, usually, we want the user to explicitly click "Continue" or similar if we are in
-        // an
-        // onboarding flow.
-        // Here we just provide the screen functionalities.
+        // Check if critical permissions are granted to potentially auto-navigate
+        LaunchedEffect(isStorageGranted, isNotificationGranted) {
+                if (isStorageGranted && isNotificationGranted) {
+                        onAllPermissionsGranted()
+                }
+        }
 
         val storageLauncher =
                 rememberLauncherForActivityResult(
@@ -201,7 +199,7 @@ fun PermissionScreen(onAllPermissionsGranted: () -> Unit) {
                 Button(
                         onClick = onAllPermissionsGranted,
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                        enabled = isStorageGranted // At least storage is critical
+                        enabled = isStorageGranted && isNotificationGranted
                 ) { Text("Continue") }
         }
 }
