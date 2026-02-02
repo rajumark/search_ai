@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
-    <bytecodeTargetLevel target="21">
+    <bytecodeTargetLevel target="17">
       <module name="Photo_Search_AI.core.cleanup_engine" target="21" />
       <module name="Photo_Search_AI.core.common" target="21" />
-      <module name="Photo_Search_AI.core.database" target="21" />
       <module name="Photo_Search_AI.core.datastore" target="21" />
       <module name="Photo_Search_AI.core.duplicate_engine" target="21" />
       <module name="Photo_Search_AI.core.media_index" target="21" />
@@ -12,14 +11,12 @@
       <module name="Photo_Search_AI.core.ml" target="21" />
       <module name="Photo_Search_AI.core.opencv" target="21" />
       <module name="Photo_Search_AI.core.rules_engine" target="21" />
-      <module name="Photo_Search_AI.core.work" target="21" />
       <module name="Photo_Search_AI.feature.barcode" target="21" />
       <module name="Photo_Search_AI.feature.battery" target="21" />
       <module name="Photo_Search_AI.feature.face" target="21" />
       <module name="Photo_Search_AI.feature.gallery_insights" target="21" />
       <module name="Photo_Search_AI.feature.image_label" target="21" />
       <module name="Photo_Search_AI.feature.media_vault" target="21" />
-      <module name="Photo_Search_AI.feature.ocr" target="21" />
       <module name="Photo_Search_AI.feature.onboarding" target="21" />
       <module name="Photo_Search_AI.feature.permission" target="21" />
       <module name="Photo_Search_AI.feature.search" target="21" />
