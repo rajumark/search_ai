@@ -6,7 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.photo.searchai.app.ui.home.AppHome
 import com.photo.searchai.app.ui.onboarding.OnboardingScreen
-import com.photo.searchai.app.ui.permission.PermissionScreen
+import com.photo.searchai.core.permissions.ui.PermissionScreen
 
 @Composable
 fun AppNavHost() {
@@ -19,7 +19,7 @@ fun AppNavHost() {
 
         composable<Route.Permission> {
             PermissionScreen(
-                    onPermissionsGranted = {
+                    onAllPermissionsGranted = {
                         // Pop back stack so user can't go back to permission/onboarding
                         navController.navigate(Route.Home) {
                             popUpTo(Route.Onboarding) { inclusive = true }
