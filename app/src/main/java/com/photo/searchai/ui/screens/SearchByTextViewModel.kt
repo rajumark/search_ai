@@ -32,7 +32,12 @@ constructor(
     private val QUERY_KEY = "search_query"
 
     private val _uiState =
-            MutableStateFlow(SearchUiState(query = savedStateHandle.get<String>(QUERY_KEY) ?: ""))
+            MutableStateFlow(
+                    SearchUiState(
+                            query = savedStateHandle.get<String>(QUERY_KEY) ?: "",
+                            isActive = (savedStateHandle.get<String>(QUERY_KEY) ?: "").isNotEmpty()
+                    )
+            )
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
     init {
@@ -42,12 +47,13 @@ constructor(
                 .debounce(300)
                 .flatMapLatest { query ->
                     if (query.isBlank()) {
-                        // When query is empty, show recent searches as chips
-                        mediaRepository.getRecentSearches().map { recent ->
-                            _uiState.update {
-                                it.copy(suggestedChips = recent, results = emptyList())
-                            }
-                            emptyList<SearchResultWithOcr>()
+                        // When query is empty, show recent searches as chips AND all photos
+                        combine(
+                                mediaRepository.getRecentSearches(),
+                                mediaRepository.getAllImages()
+                        ) { recent, images ->
+                            _uiState.update { it.copy(suggestedChips = recent) }
+                            images.map { SearchResultWithOcr(it, null) }
                         }
                     } else {
                         // Perform search and fetch suggestions

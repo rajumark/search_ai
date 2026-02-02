@@ -20,6 +20,7 @@ constructor(
         @Assisted appContext: Context,
         @Assisted workerParams: WorkerParameters,
         private val repository: MediaRepository,
+        private val groupRepository: com.photo.searchai.core.data.repository.GroupRepository,
         private val ocrProcessor: OcrProcessor
 ) : CoroutineWorker(appContext, workerParams) {
 
@@ -66,6 +67,9 @@ constructor(
         val pendingImages = repository.getPendingOcrImages()
         val total = pendingImages.size
 
+        if (total == 0) return
+
+        var processedCount = 0
         pendingImages.forEachIndexed { index, image ->
             if (isStopped) return@forEachIndexed
 
@@ -77,9 +81,21 @@ constructor(
             try {
                 val text = ocrProcessor.processImage(image.uri)
                 repository.updateOcrResult(image.id, text)
+
+                // Extract keywords for grouping
+                if (text.isNotBlank()) {
+                    groupRepository.extractAndSaveKeywords(image.id, text)
+                }
+
+                processedCount++
             } catch (e: Exception) {
                 // Individual image processing failure shouldn't stop the whole sync
             }
+        }
+
+        // Regenerate groups if we processed any images
+        if (processedCount > 0) {
+            groupRepository.generateGroups()
         }
     }
 

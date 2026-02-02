@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -30,7 +31,11 @@ enum class HomeTab {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onNavigateToSearch: () -> Unit, viewModel: HomeViewModel = hiltViewModel()) {
+fun HomeScreen(
+        onNavigateToSearch: () -> Unit,
+        onNavigateToGrouping: () -> Unit,
+        viewModel: HomeViewModel = hiltViewModel()
+) {
         var selectedTab by remember { mutableStateOf(HomeTab.Home) }
 
         Scaffold(
@@ -92,7 +97,10 @@ fun HomeScreen(onNavigateToSearch: () -> Unit, viewModel: HomeViewModel = hiltVi
                                         HomeTabContent(viewModel)
                                 }
                                 HomeTab.Menu -> {
-                                        MenuTabContent(onNavigateToSearch = onNavigateToSearch)
+                                        MenuTabContent(
+                                                onNavigateToSearch = onNavigateToSearch,
+                                                onNavigateToGrouping = onNavigateToGrouping
+                                        )
                                 }
                         }
                 }
@@ -137,10 +145,17 @@ private fun HomeTabContent(viewModel: HomeViewModel) {
 }
 
 @Composable
-private fun MenuTabContent(onNavigateToSearch: () -> Unit) {
+private fun MenuTabContent(onNavigateToSearch: () -> Unit, onNavigateToGrouping: () -> Unit) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Button(onClick = onNavigateToSearch, modifier = Modifier.padding(16.dp)) {
-                        Text("Search by text")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Button(
+                                onClick = onNavigateToSearch,
+                                modifier = Modifier.padding(16.dp).fillMaxWidth(0.8f)
+                        ) { Text("Search by text") }
+                        Button(
+                                onClick = onNavigateToGrouping,
+                                modifier = Modifier.padding(16.dp).fillMaxWidth(0.8f)
+                        ) { Text("Grouping by text") }
                 }
         }
 }

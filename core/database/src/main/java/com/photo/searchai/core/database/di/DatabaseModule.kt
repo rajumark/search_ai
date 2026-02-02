@@ -32,4 +32,9 @@ object DatabaseModule {
     fun provideSearchDao(database: AppDatabase): com.photo.searchai.core.database.dao.SearchDao {
         return database.searchDao()
     }
+
+    @Provides
+    fun provideGroupDao(database: AppDatabase): com.photo.searchai.core.database.dao.GroupDao {
+        return database.groupDao()
+    }
 }
