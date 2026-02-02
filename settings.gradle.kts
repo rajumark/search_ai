@@ -26,6 +26,5 @@ include(":core:database")
 include(":core:data")
 include(":core:work")
 include(":core:ocr")
-include(":feature:home")
-include(":feature:media")
+
 

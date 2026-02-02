@@ -43,12 +43,11 @@ fun SearchResults(
         LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 160.dp),
                 modifier = modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             items(items = results, key = { it.image.id }) { item ->
-                Column(modifier = Modifier.fillMaxWidth()) {
                     AsyncImage(
                             model = item.image.uri,
                             contentDescription = item.image.name,
@@ -58,18 +57,6 @@ fun SearchResults(
                                             .background(MaterialTheme.colorScheme.surfaceVariant),
                             contentScale = ContentScale.Crop
                     )
-                    val ocrText = item.ocrText
-                    if (!ocrText.isNullOrBlank() && query.isNotEmpty()) {
-                        Text(
-                                text = highlightMatches(ocrText, query),
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(top = 4.dp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
             }
         }
     }

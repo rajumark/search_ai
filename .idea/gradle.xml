@@ -17,9 +17,6 @@
             <option value="$PROJECT_DIR$/core/ocr" />
             <option value="$PROJECT_DIR$/core/permission" />
             <option value="$PROJECT_DIR$/core/work" />
-            <option value="$PROJECT_DIR$/feature" />
-            <option value="$PROJECT_DIR$/feature/home" />
-            <option value="$PROJECT_DIR$/feature/media" />
           </set>
         </option>
       </GradleProjectSettings>
