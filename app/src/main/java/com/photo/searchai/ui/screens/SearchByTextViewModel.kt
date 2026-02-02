@@ -4,12 +4,14 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.photo.searchai.core.data.repository.MediaRepository
+import com.photo.searchai.core.database.entity.ImageEntity
 import com.photo.searchai.core.database.entity.SearchResultWithOcr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
 data class SearchUiState(
         val query: String = "",
@@ -98,5 +100,9 @@ constructor(
 
     fun onClearQuery() {
         onQueryChange("")
+    }
+
+    fun deleteImage(image: ImageEntity) {
+        viewModelScope.launch(Dispatchers.IO) { mediaRepository.deleteImage(image) }
     }
 }

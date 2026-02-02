@@ -2,6 +2,7 @@ package com.photo.searchai.core.data.repository
 
 import android.content.ContentUris
 import android.content.Context
+import android.net.Uri
 import android.provider.MediaStore
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -44,6 +45,20 @@ constructor(
                         pagingSourceFactory = { imageDao.getAllImagesPagingSource() }
                 )
                 .flow
+    }
+
+    suspend fun deleteImage(image: ImageEntity): Boolean {
+        if (!PermissionChecker.hasPermission(context, PermissionType.ALL_FILES)) {
+            return false
+        }
+
+        val deleted =
+                context.contentResolver.delete(Uri.parse(image.uri), null, null)
+        if (deleted > 0) {
+            imageDao.deleteImagesByIds(listOf(image.id))
+            return true
+        }
+        return false
     }
 
     suspend fun syncImages() {

@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.photo.searchai.core.data.repository.MediaRepository
+import com.photo.searchai.core.database.entity.ImageEntity
 import com.photo.searchai.core.database.entity.SearchResultWithOcr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -78,6 +79,10 @@ constructor(
 
     fun removeLabel(label: String) {
         _uiState.update { it.copy(selectedLabels = it.selectedLabels - label) }
+    }
+
+    fun deleteImage(image: ImageEntity) {
+        viewModelScope.launch { mediaRepository.deleteImage(image) }
     }
 
     companion object {

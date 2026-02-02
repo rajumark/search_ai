@@ -2,6 +2,7 @@ package com.photo.searchai.ui.components
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -26,7 +27,8 @@ import com.photo.searchai.core.database.entity.SearchResultWithOcr
 fun SearchResults(
         results: List<SearchResultWithOcr>,
         query: String = "",
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
+        onItemClick: (Int) -> Unit = {}
 ) {
 //    /android
     if (results.isEmpty()) {
@@ -48,15 +50,17 @@ fun SearchResults(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             items(items = results, key = { it.image.id }) { item ->
-                    AsyncImage(
-                            model = item.image.uri,
-                            contentDescription = item.image.name,
-                            modifier =
-                                    Modifier.aspectRatio(1f)
-                                            .fillMaxWidth()
-                                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentScale = ContentScale.Crop
-                    )
+                val index = results.indexOf(item)
+                AsyncImage(
+                        model = item.image.uri,
+                        contentDescription = item.image.name,
+                        modifier =
+                                Modifier.aspectRatio(1f)
+                                        .fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                        .clickable { onItemClick(index) },
+                        contentScale = ContentScale.Crop
+                )
             }
         }
     }
