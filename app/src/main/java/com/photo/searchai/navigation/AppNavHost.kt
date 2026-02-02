@@ -7,8 +7,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.photo.searchai.ui.screens.HomeScreen
 import com.photo.searchai.ui.screens.PermissionScreen
+import com.photo.searchai.ui.screens.SearchByLabelsScreen
 import com.photo.searchai.ui.screens.SearchByTextScreen
 import com.photo.searchai.ui.screens.SplashScreen
+import com.photo.searchai.ui.screens.ExploreByLabelsScreen
 
 @Composable
 fun AppNavHost(
@@ -40,7 +42,8 @@ fun AppNavHost(
         composable("home") {
             HomeScreen(
                     onNavigateToSearch = { navController.navigate("search_by_text") },
-                    onNavigateToGrouping = { navController.navigate("grouping_by_text") }
+                    onNavigateToGrouping = { navController.navigate("grouping_by_text") },
+                    onNavigateToLabels = { navController.navigate("explore_by_labels") }
             )
         }
         composable(
@@ -60,6 +63,26 @@ fun AppNavHost(
                         navController.navigate("search_by_text?search_query=$query")
                     }
             )
+        }
+        composable("explore_by_labels") {
+            ExploreByLabelsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onLabelClick = { label ->
+                        navController.navigate("search_by_labels?label=$label")
+                    }
+            )
+        }
+        composable(
+                route = "search_by_labels?label={label}",
+                arguments =
+                        listOf(
+                                androidx.navigation.navArgument("label") {
+                                    defaultValue = ""
+                                    type = androidx.navigation.NavType.StringType
+                                }
+                        )
+        ) {
+            SearchByLabelsScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

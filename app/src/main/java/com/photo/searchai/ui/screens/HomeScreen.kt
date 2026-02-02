@@ -34,6 +34,7 @@ enum class HomeTab {
 fun HomeScreen(
         onNavigateToSearch: () -> Unit,
         onNavigateToGrouping: () -> Unit,
+        onNavigateToLabels: () -> Unit,
         viewModel: HomeViewModel = hiltViewModel()
 ) {
         var selectedTab by remember { mutableStateOf(HomeTab.Home) }
@@ -99,7 +100,8 @@ fun HomeScreen(
                                 HomeTab.Menu -> {
                                         MenuTabContent(
                                                 onNavigateToSearch = onNavigateToSearch,
-                                                onNavigateToGrouping = onNavigateToGrouping
+                                                onNavigateToGrouping = onNavigateToGrouping,
+                                                onNavigateToLabels = onNavigateToLabels
                                         )
                                 }
                         }
@@ -152,7 +154,11 @@ private fun HomeTabContent(viewModel: HomeViewModel) {
 }
 
 @Composable
-private fun MenuTabContent(onNavigateToSearch: () -> Unit, onNavigateToGrouping: () -> Unit) {
+private fun MenuTabContent(
+        onNavigateToSearch: () -> Unit,
+        onNavigateToGrouping: () -> Unit,
+        onNavigateToLabels: () -> Unit
+) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Button(
@@ -163,6 +169,10 @@ private fun MenuTabContent(onNavigateToSearch: () -> Unit, onNavigateToGrouping:
                                 onClick = onNavigateToGrouping,
                                 modifier = Modifier.padding(16.dp).fillMaxWidth(0.8f)
                         ) { Text("Grouping by text") }
+                        Button(
+                                onClick = onNavigateToLabels,
+                                modifier = Modifier.padding(16.dp).fillMaxWidth(0.8f)
+                        ) { Text("Explore by labels") }
                 }
         }
 }

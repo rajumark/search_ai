@@ -34,6 +34,8 @@ constructor(
     fun getImageCountFlow(): Flow<Int> = imageDao.getImageCount()
     fun getOcrProcessedCountFlow(): Flow<Int> = imageDao.getOcrProcessedCount()
     fun getLabelingProcessedCountFlow(): Flow<Int> = imageLabelDao.getLabeledImageCount()
+    fun getLabelCountsFlow(): Flow<List<com.photo.searchai.core.database.entity.LabelCount>> =
+            imageLabelDao.getLabelCounts()
     fun getAllImages(): Flow<List<ImageEntity>> = imageDao.getAllImages()
 
     fun getAllImagesPager(): Flow<PagingData<ImageEntity>> {
@@ -70,6 +72,16 @@ constructor(
 
     suspend fun getPendingLabelingImages(): List<ImageEntity> =
             imageLabelDao.getPendingLabelingImages()
+
+    suspend fun getLabelPreviewImages(labelText: String): List<ImageEntity> =
+            imageLabelDao.getLabelPreviewImages(labelText)
+
+    suspend fun getImagesForLabels(labels: List<String>): List<ImageEntity> =
+            imageLabelDao.getImagesForLabels(labels, labels.size)
+
+    suspend fun getRelatedLabels(labels: List<String>, limit: Int = 20):
+            List<com.photo.searchai.core.database.entity.LabelCount> =
+            imageLabelDao.getRelatedLabels(labels, limit)
 
     suspend fun saveLabelingResults(
             labels: List<com.photo.searchai.core.database.entity.ImageLabelEntity>
