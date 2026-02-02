@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TextSnippet
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -58,7 +60,8 @@ fun FullscreenImageViewer(
         startIndex: Int,
         onDismiss: () -> Unit,
         onDelete: (SearchResultWithOcr) -> Unit,
-        onShareImage: (SearchResultWithOcr) -> Unit
+        onShareImage: (SearchResultWithOcr) -> Unit,
+        onToggleFavorite: (Long, Boolean) -> Unit
 ) {
     val pagerState = rememberPagerState(initialPage = startIndex, pageCount = { results.size })
     val context = LocalContext.current
@@ -88,6 +91,25 @@ fun FullscreenImageViewer(
                         }
                     },
                     actions = {
+                        val currentItem = results.getOrNull(pagerState.currentPage)
+                        val isFavorite = currentItem?.image?.isFavorite == true
+                        IconButton(
+                                onClick = {
+                                    currentItem?.image?.let { image ->
+                                        onToggleFavorite(image.id, !image.isFavorite)
+                                    }
+                                }
+                        ) {
+                            Icon(
+                                    imageVector =
+                                            if (isFavorite) {
+                                                Icons.Default.Favorite
+                                            } else {
+                                                Icons.Default.FavoriteBorder
+                                            },
+                                    contentDescription = "Favorite"
+                            )
+                        }
                         IconButton(onClick = { onShareImage(results[pagerState.currentPage]) }) {
                             Icon(Icons.Default.Share, contentDescription = "Share")
                         }

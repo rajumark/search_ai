@@ -8,6 +8,7 @@ import com.photo.searchai.core.database.entity.ImageEntity
 import com.photo.searchai.core.database.entity.SearchResultWithOcr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -82,7 +83,11 @@ constructor(
     }
 
     fun deleteImage(image: ImageEntity) {
-        viewModelScope.launch { mediaRepository.deleteImage(image) }
+        viewModelScope.launch(Dispatchers.IO) { mediaRepository.deleteImage(image) }
+    }
+
+    fun setFavorite(imageId: Long, isFavorite: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) { mediaRepository.setFavorite(imageId, isFavorite) }
     }
 
     companion object {

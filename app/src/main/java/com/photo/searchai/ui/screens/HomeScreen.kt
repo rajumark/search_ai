@@ -33,6 +33,7 @@ enum class HomeTab {
 @Composable
 fun HomeScreen(
         onNavigateToSearch: () -> Unit,
+        onNavigateToFavorites: () -> Unit,
         onNavigateToGrouping: () -> Unit,
         onNavigateToLabels: () -> Unit,
         viewModel: HomeViewModel = hiltViewModel()
@@ -100,6 +101,7 @@ fun HomeScreen(
                                 HomeTab.Menu -> {
                                         MenuTabContent(
                                                 onNavigateToSearch = onNavigateToSearch,
+                                                onNavigateToFavorites = onNavigateToFavorites,
                                                 onNavigateToGrouping = onNavigateToGrouping,
                                                 onNavigateToLabels = onNavigateToLabels
                                         )
@@ -156,6 +158,7 @@ private fun HomeTabContent(viewModel: HomeViewModel) {
 @Composable
 private fun MenuTabContent(
         onNavigateToSearch: () -> Unit,
+        onNavigateToFavorites: () -> Unit,
         onNavigateToGrouping: () -> Unit,
         onNavigateToLabels: () -> Unit
 ) {
@@ -173,6 +176,10 @@ private fun MenuTabContent(
                                 onClick = onNavigateToLabels,
                                 modifier = Modifier.padding(16.dp).fillMaxWidth(0.8f)
                         ) { Text("Explore by labels") }
+                        Button(
+                                onClick = onNavigateToFavorites,
+                                modifier = Modifier.padding(16.dp).fillMaxWidth(0.8f)
+                        ) { Text("Favorite images") }
                 }
         }
 }

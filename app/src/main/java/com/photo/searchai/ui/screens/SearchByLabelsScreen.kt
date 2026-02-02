@@ -2,6 +2,7 @@ package com.photo.searchai.ui.screens
 
 import androidx.activity.compose.BackHandler
 import android.content.Intent
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -13,8 +14,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.photo.searchai.ui.components.SearchResults
 import com.photo.searchai.ui.components.FullscreenImageViewer
 
+@ExperimentalFoundationApi
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SearchByLabelsScreen(
@@ -80,7 +87,13 @@ fun SearchByLabelsScreen(
                     uiState.selectedLabels.forEach { label ->
                         AssistChip(
                                 onClick = { viewModel.removeLabel(label) },
-                                label = { Text(label) }
+                                label = { Text(label) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Check, contentDescription = null)
+                                },
+                                trailingIcon = {
+                                    Icon(Icons.Default.Close, contentDescription = "Remove")
+                                }
                         )
                     }
                 }
@@ -92,13 +105,21 @@ fun SearchByLabelsScreen(
                         style = MaterialTheme.typography.labelLarge,
                         modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                 )
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    uiState.relatedLabels.forEach { label ->
-                        FilterChip(
-                                selected = false,
-                                onClick = { viewModel.addLabel(label) },
-                                label = { Text(label) }
-                        )
+                val relatedColumns = uiState.relatedLabels.chunked(2)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(relatedColumns) { columnLabels ->
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            columnLabels.forEach { label ->
+                                FilterChip(
+                                        selected = false,
+                                        onClick = { viewModel.addLabel(label) },
+                                        label = { Text(label) },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Add, contentDescription = "Add")
+                                        }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -122,7 +143,10 @@ fun SearchByLabelsScreen(
                 results = uiState.results,
                 startIndex = selectedIndex,
                 onDismiss = { showViewer = false },
-                onDelete = { viewModel.deleteImage(it.image) },
+                onDelete = {
+                    viewModel.deleteImage(it.image)
+                    showViewer = false
+                },
                 onShareImage = { item ->
                     val intent =
                             Intent(Intent.ACTION_SEND)
@@ -130,6 +154,9 @@ fun SearchByLabelsScreen(
                                     .putExtra(Intent.EXTRA_STREAM, android.net.Uri.parse(item.image.uri))
                                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     context.startActivity(Intent.createChooser(intent, "Share image"))
+                },
+                onToggleFavorite = { imageId, isFavorite ->
+                    viewModel.setFavorite(imageId, isFavorite)
                 }
         )
     }

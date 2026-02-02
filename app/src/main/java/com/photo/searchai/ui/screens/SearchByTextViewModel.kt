@@ -105,4 +105,15 @@ constructor(
     fun deleteImage(image: ImageEntity) {
         viewModelScope.launch(Dispatchers.IO) { mediaRepository.deleteImage(image) }
     }
+
+    fun deleteImages(images: List<ImageEntity>) {
+        if (images.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            images.forEach { mediaRepository.deleteImage(it) }
+        }
+    }
+
+    fun setFavorite(imageId: Long, isFavorite: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) { mediaRepository.setFavorite(imageId, isFavorite) }
+    }
 }

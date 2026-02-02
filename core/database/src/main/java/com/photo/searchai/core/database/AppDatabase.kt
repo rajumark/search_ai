@@ -16,7 +16,7 @@ import com.photo.searchai.core.database.entity.ImageEntity
                         com.photo.searchai.core.database.entity.KeywordEntity::class,
                         com.photo.searchai.core.database.entity.GroupImageEntity::class,
                         com.photo.searchai.core.database.entity.ImageLabelEntity::class],
-        version = 6,
+        version = 7,
         exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

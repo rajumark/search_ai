@@ -28,6 +28,19 @@ interface ImageDao {
 
     @Query("DELETE FROM images WHERE id IN (:ids)") suspend fun deleteImagesByIds(ids: List<Long>)
 
+    @Query("UPDATE images SET isFavorite = :isFavorite WHERE id = :id")
+    suspend fun updateFavorite(id: Long, isFavorite: Boolean)
+
+    @Query(
+            """
+        SELECT i.*, o.ocrText FROM images i
+        LEFT JOIN ocr_results o ON i.id = o.imageId
+        WHERE i.isFavorite = 1
+        ORDER BY i.dateAdded DESC
+    """
+    )
+    fun getFavoriteImagesWithOcr(): Flow<List<com.photo.searchai.core.database.entity.SearchResultWithOcr>>
+
     @Query(
             """
         SELECT * FROM images 

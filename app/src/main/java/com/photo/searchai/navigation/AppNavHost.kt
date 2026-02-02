@@ -1,5 +1,6 @@
 package com.photo.searchai.navigation
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -12,6 +13,7 @@ import com.photo.searchai.ui.screens.SearchByTextScreen
 import com.photo.searchai.ui.screens.SplashScreen
 import com.photo.searchai.ui.screens.ExploreByLabelsScreen
 
+@ExperimentalFoundationApi
 @Composable
 fun AppNavHost(
         navController: NavHostController = rememberNavController(),
@@ -42,6 +44,9 @@ fun AppNavHost(
         composable("home") {
             HomeScreen(
                     onNavigateToSearch = { navController.navigate("search_by_text") },
+                    onNavigateToFavorites = {
+                        navController.navigate("search_by_text?search_query=is favorite")
+                    },
                     onNavigateToGrouping = { navController.navigate("grouping_by_text") },
                     onNavigateToLabels = { navController.navigate("explore_by_labels") }
             )

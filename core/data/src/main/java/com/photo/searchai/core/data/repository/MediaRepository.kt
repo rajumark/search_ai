@@ -39,6 +39,9 @@ constructor(
             imageLabelDao.getLabelCounts()
     fun getAllImages(): Flow<List<ImageEntity>> = imageDao.getAllImages()
 
+    fun getFavoriteImagesWithOcr(): Flow<List<SearchResultWithOcr>> =
+            imageDao.getFavoriteImagesWithOcr()
+
     fun getAllImagesPager(): Flow<PagingData<ImageEntity>> {
         return Pager(
                         config = PagingConfig(pageSize = 60, enablePlaceholders = true),
@@ -59,6 +62,10 @@ constructor(
             return true
         }
         return false
+    }
+
+    suspend fun setFavorite(imageId: Long, isFavorite: Boolean) {
+        imageDao.updateFavorite(imageId, isFavorite)
     }
 
     suspend fun syncImages() {
@@ -183,6 +190,13 @@ constructor(
     fun searchImages(query: String): Flow<List<SearchResultWithOcr>> {
         val trimmedQuery = query.trim()
         if (trimmedQuery.isEmpty()) return flowOf(emptyList())
+
+        val favoriteQuery = trimmedQuery.lowercase()
+        if (favoriteQuery.startsWith("is favorite") ||
+                        favoriteQuery == "favorite" ||
+                        favoriteQuery == "favorite images") {
+            return getFavoriteImagesWithOcr()
+        }
 
         val tokens = trimmedQuery.split(Regex("\\s+")).filter { it.isNotBlank() }
         val sb = StringBuilder()

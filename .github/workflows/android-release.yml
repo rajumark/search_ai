@@ -43,3 +43,11 @@ jobs:
         with:
           name: release-apk-${{ steps.date.outputs.date }}
           path: app/build/outputs/apk/release/*.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.date.outputs.date }}
+          name: v${{ steps.date.outputs.date }}
+          generate_release_notes: true
+          files: app/build/outputs/apk/release/*.apk
