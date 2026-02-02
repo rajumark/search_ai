@@ -1,4 +1,4 @@
-name: Android Release Build
+name: Android Debug Build
 
 on:
   push:
@@ -29,25 +29,25 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y.%m.%d.%H.%M')" >> $GITHUB_OUTPUT
 
-      - name: Build Release APK
-        run: ./gradlew assembleRelease -PVERSION_NAME=${{ steps.date.outputs.date }}
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug -PVERSION_NAME=${{ steps.date.outputs.date }}
 
-      - name: Rename APK with version
+      - name: Rename Debug APK
         run: |
-          APK_PATH=$(ls app/build/outputs/apk/release/*.apk | head -n1)
-          NEW_NAME="search_ai-${{ steps.date.outputs.date }}.apk"
-          mv "$APK_PATH" "app/build/outputs/apk/release/$NEW_NAME"
+          APK_PATH=$(ls app/build/outputs/apk/debug/*.apk | head -n1)
+          NEW_NAME="search_ai-debug-${{ steps.date.outputs.date }}.apk"
+          mv "$APK_PATH" "app/build/outputs/apk/debug/$NEW_NAME"
 
-      - name: Upload APK as artifact
+      - name: Upload Debug APK as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk-${{ steps.date.outputs.date }}
-          path: app/build/outputs/apk/release/*.apk
+          name: debug-apk-${{ steps.date.outputs.date }}
+          path: app/build/outputs/apk/debug/*.apk
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release (Debug)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.date.outputs.date }}
-          name: v${{ steps.date.outputs.date }}
+          tag_name: debug-${{ steps.date.outputs.date }}
+          name: Debug ${{ steps.date.outputs.date }}
           generate_release_notes: true
-          files: app/build/outputs/apk/release/*.apk
+          files: app/build/outputs/apk/debug/*.apk
