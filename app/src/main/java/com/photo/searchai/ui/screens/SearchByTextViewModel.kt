@@ -21,9 +21,9 @@ data class SearchUiState(
         val resultsCount: Int = 0,
         val suggestedChips: List<String> = emptyList(),
         val isSearching: Boolean = false,
-        val isActive: Boolean = false,
         val bucketId: Long = NO_BUCKET,
-        val bucketName: String = ""
+        val bucketName: String = "",
+        val searchPurpose: SearchPurpose = SearchPurpose.GeneralSearch
 )
 
 @OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -39,16 +39,31 @@ constructor(
     private val BUCKET_ID_KEY = "bucket_id"
     private val BUCKET_NAME_KEY = "bucket_name"
 
-    private val bucketIdArg = savedStateHandle.get<Long>(BUCKET_ID_KEY) ?: NO_BUCKET
-    private val bucketNameArg = savedStateHandle.get<String>(BUCKET_NAME_KEY).orEmpty()
+    private val searchPurpose: SearchPurpose = run {
+        val query = savedStateHandle.get<String>(QUERY_KEY).orEmpty()
+        val bucketId = savedStateHandle.get<Long>(BUCKET_ID_KEY) ?: NO_BUCKET
+        val bucketName = savedStateHandle.get<String>(BUCKET_NAME_KEY).orEmpty()
+        
+        when {
+            query.trim().lowercase() == "is favorite" || 
+            query.trim().lowercase() == "favorite" || 
+            query.trim().lowercase() == "favorite images" -> SearchPurpose.Favorites
+            
+            bucketId != NO_BUCKET -> SearchPurpose.AlbumSearch(bucketId, bucketName)
+            
+            query.isNotEmpty() -> SearchPurpose.GroupingSearch(query)
+            
+            else -> SearchPurpose.GeneralSearch
+        }
+    }
 
     private val _uiState =
             MutableStateFlow(
                     SearchUiState(
-                            query = savedStateHandle.get<String>(QUERY_KEY) ?: "",
-                            isActive = (savedStateHandle.get<String>(QUERY_KEY) ?: "").isNotEmpty(),
-                            bucketId = bucketIdArg,
-                            bucketName = bucketNameArg
+                            query = searchPurpose.getInitialQuery(),
+                            bucketId = searchPurpose.getBucketIdForSearch(),
+                            bucketName = searchPurpose.getBucketNameForDisplay(),
+                            searchPurpose = searchPurpose
                     )
             )
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
@@ -111,7 +126,7 @@ constructor(
     }
 
     fun onActiveChange(isActive: Boolean) {
-        _uiState.update { it.copy(isActive = isActive) }
+        // No longer needed with simplified search
     }
 
     fun onClearQuery() {

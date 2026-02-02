@@ -1,17 +1,15 @@
 package com.photo.searchai.ui.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import android.content.Intent
 import android.net.Uri
@@ -23,6 +21,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -32,7 +32,7 @@ import com.photo.searchai.ui.components.FullscreenImageViewer
 import com.photo.searchai.ui.components.SearchResults
 
 @ExperimentalFoundationApi
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchByTextScreen(
         onNavigateBack: () -> Unit,
@@ -46,17 +46,10 @@ fun SearchByTextScreen(
     val selectedIds = remember { mutableStateListOf<Long>() }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    val isFavoriteQuery = uiState.query.trim().lowercase().startsWith("is favorite") ||
-            uiState.query.trim().lowercase() == "favorite" ||
-            uiState.query.trim().lowercase() == "favorite images"
-
-    BackHandler(enabled = selectionMode || uiState.isActive) {
-        when {
-            selectionMode -> {
-                selectionMode = false
-                selectedIds.clear()
-            }
-            uiState.isActive -> viewModel.onActiveChange(false)
+    BackHandler(enabled = selectionMode) {
+        if (selectionMode) {
+            selectionMode = false
+            selectedIds.clear()
         }
     }
 
@@ -65,85 +58,46 @@ fun SearchByTextScreen(
                 Column(
                         modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)
                 ) {
-                    if (uiState.bucketName.isNotBlank()) {
+                    if (uiState.searchPurpose.shouldShowBucketName()) {
                         Text(
-                                text = uiState.bucketName,
+                                text = uiState.searchPurpose.getBucketNameForDisplay(),
                                 style = MaterialTheme.typography.titleLarge,
                                 modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 12.dp)
                         )
                     }
-                    SearchBar(
+                    Row(
                             modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp),
-                            query = uiState.query,
-                            onQueryChange = viewModel::onQueryChange,
-                            onSearch = { /* IME search action handled by debouncing */ },
-                            active = uiState.isActive,
-                            onActiveChange = viewModel::onActiveChange,
-                            placeholder = {
-                                Text(
-                                        when {
-                                            isFavoriteQuery -> "Favorite images"
-                                            uiState.bucketName.isNotBlank() ->
-                                                    "Search ${uiState.bucketName}"
-                                            else -> "Search photos by text"
-                                        }
-                                )
-                            },
-                            leadingIcon = {
-                                IconButton(
-                                        onClick = {
-                                            if (uiState.isActive) {
-                                                viewModel.onActiveChange(false)
-                                            } else {
-                                                onNavigateBack()
-                                            }
-                                        }
-                                ) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
-                            },
-                            trailingIcon = {
-                                if (uiState.query.isNotEmpty()) {
-                                    IconButton(onClick = viewModel::onClearQuery) {
-                                        Icon(Icons.Default.Close, contentDescription = "Clear search")
-                                    }
-                                }
-                            }
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(
+                        IconButton(
+                                onClick = onNavigateBack
+                        ) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
+                        
+                        TextField(
+                                value = uiState.query,
+                                onValueChange = viewModel::onQueryChange,
                                 modifier = Modifier
-                                        .fillMaxSize()
-                                        .verticalScroll(rememberScrollState())
-                        ) {
-                            if (isFavoriteQuery) {
-                                Text(
-                                        text = "Favorite images",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                                )
-                            }
-                            if (uiState.suggestedChips.isNotEmpty()) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                            text =
-                                                    if (uiState.query.isEmpty()) "Recent searches"
-                                                    else "Suggestions",
-                                            style = MaterialTheme.typography.labelLarge,
-                                            modifier = Modifier.padding(bottom = 8.dp)
-                                    )
-                                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        uiState.suggestedChips.forEach { chipText ->
-                                            SuggestionChip(
-                                                    onClick = { viewModel.onChipClick(chipText) },
-                                                    label = { Text(chipText) }
-                                            )
+                                        .weight(1f)
+                                        .padding(horizontal = 8.dp),
+                                placeholder = { Text(uiState.searchPurpose.getPlaceholderText()) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                                trailingIcon = {
+                                    if (uiState.query.isNotEmpty()) {
+                                        IconButton(onClick = viewModel::onClearQuery) {
+                                            Icon(Icons.Default.Close, contentDescription = "Clear search")
                                         }
                                     }
-                                }
-                            }
-                        }
+                                },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                keyboardActions = KeyboardActions(
+                                        onSearch = { /* Search is handled by debouncing */ }
+                                )
+                        )
                     }
                 }
             }
