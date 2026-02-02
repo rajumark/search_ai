@@ -1,11 +1,6 @@
 package com.photo.searchai.core.work
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
-import android.content.pm.ServiceInfo
-import android.os.Build
-import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -16,6 +11,7 @@ import com.photo.searchai.core.permission.PermissionChecker
 import com.photo.searchai.core.permission.PermissionType
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.sync.Mutex
 
 @HiltWorker
 class MediaSyncWorker
@@ -27,15 +23,20 @@ constructor(
         private val ocrProcessor: OcrProcessor
 ) : CoroutineWorker(appContext, workerParams) {
 
-    override suspend fun doWork(): Result {
-        if (!PermissionChecker.hasPermission(applicationContext, PermissionType.ALL_FILES)) {
-            return Result.failure()
-        }
+    private val notificationHelper = SyncNotificationHelper(appContext)
 
+    override suspend fun doWork(): Result {
+        if (!jobLock.tryLock()) {
+            return Result.success()
+        }
         return try {
+            if (!PermissionChecker.hasPermission(applicationContext, PermissionType.ALL_FILES)) {
+                return Result.failure()
+            }
+
             // Initial foreground notification
             if (PermissionChecker.hasPermission(applicationContext, PermissionType.NOTIFICATION)) {
-                setForeground(createForegroundInfo(0, 0))
+                setForeground(notificationHelper.createForegroundInfo(0, 0))
             }
 
             syncMedia()
@@ -43,50 +44,13 @@ constructor(
             Result.success()
         } catch (e: Exception) {
             if (runAttemptCount < 3) Result.retry() else Result.failure()
+        } finally {
+            jobLock.unlock()
         }
     }
 
     override suspend fun getForegroundInfo(): ForegroundInfo {
-        return createForegroundInfo(0, 0)
-    }
-
-    private fun createForegroundInfo(progress: Int, total: Int): ForegroundInfo {
-        val notificationManager =
-                applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as
-                        NotificationManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel =
-                    NotificationChannel(
-                            CHANNEL_ID,
-                            "Media Sync",
-                            NotificationManager.IMPORTANCE_LOW
-                    )
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        val title = "Processing Images"
-        val content =
-                if (total > 0) "Processing image $progress of $total" else "Starting process..."
-
-        val notification =
-                NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-                        .setContentTitle(title)
-                        .setContentText(content)
-                        .setSmallIcon(android.R.drawable.stat_notify_sync)
-                        .setOngoing(true)
-                        .setProgress(total, progress, total == 0)
-                        .build()
-
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            ForegroundInfo(
-                    NOTIFICATION_ID,
-                    notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
-            )
-        } else {
-            ForegroundInfo(NOTIFICATION_ID, notification)
-        }
+        return notificationHelper.createForegroundInfo(0, 0)
     }
 
     private suspend fun syncMedia() {
@@ -102,7 +66,7 @@ constructor(
 
             // Update progress notification
             if (PermissionChecker.hasPermission(applicationContext, PermissionType.NOTIFICATION)) {
-                setForeground(createForegroundInfo(index + 1, total))
+                setForeground(notificationHelper.createForegroundInfo(index + 1, total))
             }
 
             try {
@@ -115,7 +79,6 @@ constructor(
     }
 
     companion object {
-        private const val NOTIFICATION_ID = 101
-        private const val CHANNEL_ID = "media_sync_channel"
+        private val jobLock = Mutex()
     }
 }
