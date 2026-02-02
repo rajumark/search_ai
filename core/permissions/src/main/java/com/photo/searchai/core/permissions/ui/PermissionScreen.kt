@@ -14,24 +14,25 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryAlert
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -84,12 +85,10 @@ fun PermissionScreen(onAllPermissionsGranted: () -> Unit) {
         val isBatteryOptimized =
                 remember(refreshKey) { permissionManager.isBatteryOptimized(context) }
 
-        // Check if critical permissions are granted to potentially auto-navigate
-        LaunchedEffect(isStorageGranted, isNotificationGranted) {
-                if (isStorageGranted && isNotificationGranted) {
-                        onAllPermissionsGranted()
-                }
-        }
+        // Check if critical permissions are granted to potentially enable the "Continue" button
+        // The auto-skip is handled at the navigation level in AppNavHost.
+        // We stay on this screen to allow the user to see and grant optional permissions like
+        // Battery.
 
         val storageLauncher =
                 rememberLauncherForActivityResult(
@@ -105,40 +104,112 @@ fun PermissionScreen(onAllPermissionsGranted: () -> Unit) {
                         // Result handled by ON_RESUME refresh
                 }
 
-        Column(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-                Text(
-                        text = "Required Permissions",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Text(
-                        text =
-                                "To provide the best experience, this app needs access to the following:",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(bottom = 24.dp)
-                )
-
-                LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.weight(1f)
+        Scaffold(
+                bottomBar = {
+                        Button(
+                                onClick = onAllPermissionsGranted,
+                                modifier = Modifier.fillMaxWidth().padding(24.dp).height(56.dp),
+                                enabled = isStorageGranted && isNotificationGranted,
+                                shape = MaterialTheme.shapes.extraLarge
+                        ) { Text("Continue", style = MaterialTheme.typography.titleMedium) }
+                }
+        ) { innerPadding ->
+                Column(
+                        modifier =
+                                Modifier.fillMaxSize()
+                                        .padding(innerPadding)
+                                        .padding(horizontal = 24.dp),
+                        horizontalAlignment = Alignment.Start
                 ) {
-                        item {
-                                PermissionCard(
-                                        title = "All Files Access",
-                                        description =
-                                                "Required to scan and organize your photos and media.",
-                                        icon = Icons.Default.Folder,
-                                        isGranted = isStorageGranted,
-                                        onClick = {
-                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-                                                ) {
+                        Spacer(modifier = Modifier.size(48.dp))
+
+                        Text(
+                                text = "App permissions",
+                                style = MaterialTheme.typography.displaySmall,
+                                fontWeight = FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Text(
+                                text = "Allow Search AI to access",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
+                        )
+
+                        LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                        ) {
+                                item {
+                                        PermissionListItem(
+                                                title = "Files and media",
+                                                description =
+                                                        "Allow access to all files to scan and organize photos",
+                                                icon = Icons.Default.Folder,
+                                                isGranted = isStorageGranted,
+                                                onClick = {
+                                                        if (Build.VERSION.SDK_INT >=
+                                                                        Build.VERSION_CODES.R
+                                                        ) {
+                                                                val intent =
+                                                                        Intent(
+                                                                                        Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
+                                                                                )
+                                                                                .apply {
+                                                                                        data =
+                                                                                                Uri.fromParts(
+                                                                                                        "package",
+                                                                                                        context.packageName,
+                                                                                                        null
+                                                                                                )
+                                                                                }
+                                                                storageLauncher.launch(intent)
+                                                        }
+                                                }
+                                        )
+                                        HorizontalDivider(
+                                                modifier = Modifier.padding(vertical = 8.dp),
+                                                thickness = 0.5.dp,
+                                                color = MaterialTheme.colorScheme.outlineVariant
+                                        )
+                                }
+
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        item {
+                                                PermissionListItem(
+                                                        title = "Notifications",
+                                                        description =
+                                                                "Get updates on scanning progress",
+                                                        icon = Icons.Default.Notifications,
+                                                        isGranted = isNotificationGranted,
+                                                        onClick = {
+                                                                notificationPermissionState
+                                                                        ?.launchPermissionRequest()
+                                                        }
+                                                )
+                                                HorizontalDivider(
+                                                        modifier =
+                                                                Modifier.padding(vertical = 8.dp),
+                                                        thickness = 0.5.dp,
+                                                        color =
+                                                                MaterialTheme.colorScheme
+                                                                        .outlineVariant
+                                                )
+                                        }
+                                }
+
+                                item {
+                                        PermissionListItem(
+                                                title = "Battery optimization",
+                                                description =
+                                                        "Allow background processing (Optional)",
+                                                icon = Icons.Default.BatteryAlert,
+                                                isGranted = isBatteryOptimized,
+                                                onClick = {
                                                         val intent =
                                                                 Intent(
-                                                                                Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
+                                                                                Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
                                                                         )
                                                                         .apply {
                                                                                 data =
@@ -148,109 +219,63 @@ fun PermissionScreen(onAllPermissionsGranted: () -> Unit) {
                                                                                                 null
                                                                                         )
                                                                         }
-                                                        storageLauncher.launch(intent)
-                                                }
-                                        }
-                                )
-                        }
-
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                item {
-                                        PermissionCard(
-                                                title = "Notifications",
-                                                description =
-                                                        "Get updates on scanning progress and new features.",
-                                                icon = Icons.Default.Notifications,
-                                                isGranted = isNotificationGranted,
-                                                onClick = {
-                                                        notificationPermissionState
-                                                                ?.launchPermissionRequest()
+                                                        batteryLauncher.launch(intent)
                                                 }
                                         )
                                 }
                         }
-
-                        item {
-                                PermissionCard(
-                                        title = "Battery Optimization",
-                                        description =
-                                                "Allow background processing for faster media analysis. (Optional)",
-                                        icon = Icons.Default.BatteryAlert,
-                                        isGranted = isBatteryOptimized,
-                                        onClick = {
-                                                val intent =
-                                                        Intent(
-                                                                        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-                                                                )
-                                                                .apply {
-                                                                        data =
-                                                                                Uri.fromParts(
-                                                                                        "package",
-                                                                                        context.packageName,
-                                                                                        null
-                                                                                )
-                                                                }
-                                                batteryLauncher.launch(intent)
-                                        }
-                                )
-                        }
                 }
-
-                Button(
-                        onClick = onAllPermissionsGranted,
-                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                        enabled = isStorageGranted && isNotificationGranted
-                ) { Text("Continue") }
         }
 }
 
 @Composable
-fun PermissionCard(
+fun PermissionListItem(
         title: String,
         description: String,
         icon: ImageVector,
         isGranted: Boolean,
         onClick: () -> Unit
 ) {
-        Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors =
-                        CardDefaults.cardColors(
-                                containerColor =
-                                        if (isGranted) MaterialTheme.colorScheme.surfaceVariant
-                                        else MaterialTheme.colorScheme.surface
-                        )
+        Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
         ) {
-                Row(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                ) {
-                        Icon(
-                                imageVector = if (isGranted) Icons.Default.CheckCircle else icon,
-                                contentDescription = null,
-                                tint =
-                                        if (isGranted) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(40.dp)
+                Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                )
+
+                Spacer(modifier = Modifier.width(20.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                                text = title,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                        text = title,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                        text = if (isGranted) "Permission Granted" else description,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                        }
-                        if (!isGranted) {
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Button(onClick = onClick) { Text("Allow") }
-                        }
+                        Text(
+                                text = description,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                 }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Switch(
+                        checked = isGranted,
+                        onCheckedChange = { onClick() },
+                        colors =
+                                SwitchDefaults.colors(
+                                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                                        checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                        uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                                        uncheckedTrackColor =
+                                                MaterialTheme.colorScheme.surfaceVariant,
+                                )
+                )
         }
 }
