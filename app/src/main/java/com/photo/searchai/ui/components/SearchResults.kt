@@ -28,6 +28,7 @@ fun SearchResults(
         query: String = "",
         modifier: Modifier = Modifier
 ) {
+//    /android
     if (results.isEmpty()) {
         Box(modifier = modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
             Text(
