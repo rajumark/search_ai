@@ -33,6 +33,7 @@ enum class HomeTab {
 @Composable
 fun HomeScreen(
         onNavigateToSearch: () -> Unit,
+        onNavigateToPhotoFolders: () -> Unit,
         onNavigateToFavorites: () -> Unit,
         onNavigateToGrouping: () -> Unit,
         onNavigateToLabels: () -> Unit,
@@ -101,6 +102,7 @@ fun HomeScreen(
                                 HomeTab.Menu -> {
                                         MenuTabContent(
                                                 onNavigateToSearch = onNavigateToSearch,
+                                                onNavigateToPhotoFolders = onNavigateToPhotoFolders,
                                                 onNavigateToFavorites = onNavigateToFavorites,
                                                 onNavigateToGrouping = onNavigateToGrouping,
                                                 onNavigateToLabels = onNavigateToLabels
@@ -158,6 +160,7 @@ private fun HomeTabContent(viewModel: HomeViewModel) {
 @Composable
 private fun MenuTabContent(
         onNavigateToSearch: () -> Unit,
+        onNavigateToPhotoFolders: () -> Unit,
         onNavigateToFavorites: () -> Unit,
         onNavigateToGrouping: () -> Unit,
         onNavigateToLabels: () -> Unit
@@ -168,6 +171,10 @@ private fun MenuTabContent(
                                 onClick = onNavigateToSearch,
                                 modifier = Modifier.padding(16.dp).fillMaxWidth(0.8f)
                         ) { Text("Search by text") }
+                        Button(
+                                onClick = onNavigateToPhotoFolders,
+                                modifier = Modifier.padding(16.dp).fillMaxWidth(0.8f)
+                        ) { Text("Photo Folders") }
                         Button(
                                 onClick = onNavigateToGrouping,
                                 modifier = Modifier.padding(16.dp).fillMaxWidth(0.8f)

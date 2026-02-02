@@ -57,6 +57,13 @@ fun SearchByTextScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        if (uiState.bucketName.isNotBlank()) {
+            Text(
+                    text = uiState.bucketName,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            )
+        }
         SearchBar(
                 modifier =
                         Modifier.fillMaxWidth()
@@ -67,7 +74,14 @@ fun SearchByTextScreen(
                 active = uiState.isActive,
                 onActiveChange = viewModel::onActiveChange,
                 placeholder = {
-                    Text(if (isFavoriteQuery) "Favorite images" else "Search photos by text")
+                    Text(
+                            when {
+                                isFavoriteQuery -> "Favorite images"
+                                uiState.bucketName.isNotBlank() ->
+                                        "Search ${uiState.bucketName}"
+                                else -> "Search photos by text"
+                            }
+                    )
                 },
                 leadingIcon = {
                     IconButton(

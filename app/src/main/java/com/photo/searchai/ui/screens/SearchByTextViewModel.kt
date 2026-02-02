@@ -13,13 +13,17 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+private const val NO_BUCKET = -1L
+
 data class SearchUiState(
         val query: String = "",
         val results: List<SearchResultWithOcr> = emptyList(),
         val resultsCount: Int = 0,
         val suggestedChips: List<String> = emptyList(),
         val isSearching: Boolean = false,
-        val isActive: Boolean = false
+        val isActive: Boolean = false,
+        val bucketId: Long = NO_BUCKET,
+        val bucketName: String = ""
 )
 
 @OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -32,12 +36,19 @@ constructor(
 ) : ViewModel() {
 
     private val QUERY_KEY = "search_query"
+    private val BUCKET_ID_KEY = "bucket_id"
+    private val BUCKET_NAME_KEY = "bucket_name"
+
+    private val bucketIdArg = savedStateHandle.get<Long>(BUCKET_ID_KEY) ?: NO_BUCKET
+    private val bucketNameArg = savedStateHandle.get<String>(BUCKET_NAME_KEY).orEmpty()
 
     private val _uiState =
             MutableStateFlow(
                     SearchUiState(
                             query = savedStateHandle.get<String>(QUERY_KEY) ?: "",
-                            isActive = (savedStateHandle.get<String>(QUERY_KEY) ?: "").isNotEmpty()
+                            isActive = (savedStateHandle.get<String>(QUERY_KEY) ?: "").isNotEmpty(),
+                            bucketId = bucketIdArg,
+                            bucketName = bucketNameArg
                     )
             )
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
@@ -48,11 +59,16 @@ constructor(
                 .distinctUntilChanged()
                 .debounce(300)
                 .flatMapLatest { query ->
+                    val bucketId = _uiState.value.bucketId.takeIf { it >= 0 }
                     if (query.isBlank()) {
                         // When query is empty, show recent searches as chips AND all photos
                         combine(
                                 mediaRepository.getRecentSearches(),
-                                mediaRepository.getAllImages()
+                                if (bucketId == null) {
+                                    mediaRepository.getAllImages()
+                                } else {
+                                    mediaRepository.getImagesByBucket(bucketId)
+                                }
                         ) { recent, images ->
                             _uiState.update { it.copy(suggestedChips = recent) }
                             images.map { SearchResultWithOcr(it, null) }
@@ -70,7 +86,7 @@ constructor(
                             _uiState.update { it.copy(suggestedChips = suggestions) }
 
                             // Emit search results
-                            emitAll(mediaRepository.searchImages(query))
+                            emitAll(mediaRepository.searchImages(query, bucketId))
                         }
                     }
                 }

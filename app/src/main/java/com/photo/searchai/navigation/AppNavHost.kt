@@ -6,7 +6,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import android.net.Uri
 import com.photo.searchai.ui.screens.HomeScreen
+import com.photo.searchai.ui.screens.PhotoFoldersScreen
 import com.photo.searchai.ui.screens.PermissionScreen
 import com.photo.searchai.ui.screens.SearchByLabelsScreen
 import com.photo.searchai.ui.screens.SearchByTextScreen
@@ -44,6 +46,7 @@ fun AppNavHost(
         composable("home") {
             HomeScreen(
                     onNavigateToSearch = { navController.navigate("search_by_text") },
+                    onNavigateToPhotoFolders = { navController.navigate("photo_folders") },
                     onNavigateToFavorites = {
                         navController.navigate("search_by_text?search_query=is favorite")
                     },
@@ -51,11 +54,31 @@ fun AppNavHost(
                     onNavigateToLabels = { navController.navigate("explore_by_labels") }
             )
         }
+        composable("photo_folders") {
+            PhotoFoldersScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onAlbumClick = { album ->
+                        val encodedName = Uri.encode(album.bucketName)
+                        navController.navigate(
+                                "search_by_text?bucket_id=${album.bucketId}&bucket_name=$encodedName"
+                        )
+                    }
+            )
+        }
         composable(
-                route = "search_by_text?search_query={search_query}",
+                route =
+                        "search_by_text?search_query={search_query}&bucket_id={bucket_id}&bucket_name={bucket_name}",
                 arguments =
                         listOf(
                                 androidx.navigation.navArgument("search_query") {
+                                    defaultValue = ""
+                                    type = androidx.navigation.NavType.StringType
+                                },
+                                androidx.navigation.navArgument("bucket_id") {
+                                    defaultValue = -1L
+                                    type = androidx.navigation.NavType.LongType
+                                },
+                                androidx.navigation.navArgument("bucket_name") {
                                     defaultValue = ""
                                     type = androidx.navigation.NavType.StringType
                                 }

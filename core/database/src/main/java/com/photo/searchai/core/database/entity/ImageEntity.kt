@@ -10,5 +10,7 @@ data class ImageEntity(
         val name: String,
         val dateAdded: Long,
         val size: Long,
+        val bucketId: Long,
+        val bucketName: String,
         val isFavorite: Boolean = false
 )

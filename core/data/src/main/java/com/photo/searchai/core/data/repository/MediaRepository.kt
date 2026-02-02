@@ -9,6 +9,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.photo.searchai.core.database.dao.ImageDao
+import com.photo.searchai.core.database.entity.AlbumSummary
 import com.photo.searchai.core.database.entity.ImageEntity
 import com.photo.searchai.core.database.entity.OcrEntity
 import com.photo.searchai.core.database.entity.RecentSearchEntity
@@ -38,9 +39,17 @@ constructor(
     fun getLabelCountsFlow(): Flow<List<com.photo.searchai.core.database.entity.LabelCount>> =
             imageLabelDao.getLabelCounts()
     fun getAllImages(): Flow<List<ImageEntity>> = imageDao.getAllImages()
+    fun getImagesByBucket(bucketId: Long): Flow<List<ImageEntity>> =
+            imageDao.getImagesByBucket(bucketId)
 
-    fun getFavoriteImagesWithOcr(): Flow<List<SearchResultWithOcr>> =
-            imageDao.getFavoriteImagesWithOcr()
+    fun getAlbumSummaries(): Flow<List<AlbumSummary>> = imageDao.getAlbumSummaries()
+
+    fun getFavoriteImagesWithOcr(bucketId: Long? = null): Flow<List<SearchResultWithOcr>> =
+            if (bucketId == null || bucketId < 0) {
+                imageDao.getFavoriteImagesWithOcr()
+            } else {
+                imageDao.getFavoriteImagesWithOcrInBucket(bucketId)
+            }
 
     fun getAllImagesPager(): Flow<PagingData<ImageEntity>> {
         return Pager(
@@ -187,7 +196,7 @@ constructor(
         return (coOccurring + prefixMatches + globalTop).distinct().take(8)
     }
 
-    fun searchImages(query: String): Flow<List<SearchResultWithOcr>> {
+    fun searchImages(query: String, bucketId: Long? = null): Flow<List<SearchResultWithOcr>> {
         val trimmedQuery = query.trim()
         if (trimmedQuery.isEmpty()) return flowOf(emptyList())
 
@@ -195,7 +204,7 @@ constructor(
         if (favoriteQuery.startsWith("is favorite") ||
                         favoriteQuery == "favorite" ||
                         favoriteQuery == "favorite images") {
-            return getFavoriteImagesWithOcr()
+            return getFavoriteImagesWithOcr(bucketId)
         }
 
         val tokens = trimmedQuery.split(Regex("\\s+")).filter { it.isNotBlank() }
@@ -219,6 +228,11 @@ constructor(
         sb.append("(")
         sb.append(conditions.joinToString(" OR "))
         sb.append(")")
+
+        if (bucketId != null && bucketId >= 0) {
+            sb.append(" AND i.bucketId = ?")
+            args.add(bucketId)
+        }
 
         sb.append(" ORDER BY ")
 
@@ -251,7 +265,9 @@ constructor(
                         MediaStore.Images.Media._ID,
                         MediaStore.Images.Media.DISPLAY_NAME,
                         MediaStore.Images.Media.DATE_ADDED,
-                        MediaStore.Images.Media.SIZE
+                        MediaStore.Images.Media.SIZE,
+                        MediaStore.Images.Media.BUCKET_ID,
+                        MediaStore.Images.Media.BUCKET_DISPLAY_NAME
                 )
 
         val query =
@@ -268,17 +284,22 @@ constructor(
             val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
             val dateColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
             val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE)
+            val bucketIdColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.BUCKET_ID)
+            val bucketNameColumn =
+                    cursor.getColumnIndexOrThrow(MediaStore.Images.Media.BUCKET_DISPLAY_NAME)
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
                 val name = cursor.getString(nameColumn) ?: "Unknown"
                 val date = cursor.getLong(dateColumn)
                 val size = cursor.getLong(sizeColumn)
+                val bucketId = cursor.getLong(bucketIdColumn)
+                val bucketName = cursor.getString(bucketNameColumn) ?: "Unknown"
                 val uri =
                         ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
                                 .toString()
 
-                imageList.add(ImageEntity(id, uri, name, date, size))
+                imageList.add(ImageEntity(id, uri, name, date, size, bucketId, bucketName))
             }
         }
         return imageList

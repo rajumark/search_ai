@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.RawQuery
 import androidx.sqlite.db.SupportSQLiteQuery
+import com.photo.searchai.core.database.entity.AlbumSummary
 import com.photo.searchai.core.database.entity.ImageEntity
 import com.photo.searchai.core.database.entity.OcrEntity
 import kotlinx.coroutines.flow.Flow
@@ -16,8 +17,14 @@ interface ImageDao {
     @Query("SELECT * FROM images ORDER BY dateAdded DESC")
     fun getAllImages(): Flow<List<ImageEntity>>
 
+    @Query("SELECT * FROM images WHERE bucketId = :bucketId ORDER BY dateAdded DESC")
+    fun getImagesByBucket(bucketId: Long): Flow<List<ImageEntity>>
+
     @Query("SELECT * FROM images ORDER BY dateAdded DESC")
     fun getAllImagesPagingSource(): PagingSource<Int, ImageEntity>
+
+    @Query("SELECT * FROM images WHERE bucketId = :bucketId ORDER BY dateAdded DESC")
+    fun getImagesByBucketPagingSource(bucketId: Long): PagingSource<Int, ImageEntity>
 
     @Query("SELECT COUNT(*) FROM images") fun getImageCount(): Flow<Int>
 
@@ -40,6 +47,35 @@ interface ImageDao {
     """
     )
     fun getFavoriteImagesWithOcr(): Flow<List<com.photo.searchai.core.database.entity.SearchResultWithOcr>>
+
+    @Query(
+            """
+        SELECT i.*, o.ocrText FROM images i
+        LEFT JOIN ocr_results o ON i.id = o.imageId
+        WHERE i.isFavorite = 1 AND i.bucketId = :bucketId
+        ORDER BY i.dateAdded DESC
+    """
+    )
+    fun getFavoriteImagesWithOcrInBucket(
+            bucketId: Long
+    ): Flow<List<com.photo.searchai.core.database.entity.SearchResultWithOcr>>
+
+    @Query(
+            """
+        SELECT bucketId, bucketName,
+               COUNT(*) AS imageCount,
+               (
+                   SELECT uri FROM images i2
+                   WHERE i2.bucketId = i.bucketId
+                   ORDER BY i2.dateAdded DESC
+                   LIMIT 1
+               ) AS thumbnailUri
+        FROM images i
+        GROUP BY bucketId, bucketName
+        ORDER BY MAX(dateAdded) DESC
+    """
+    )
+    fun getAlbumSummaries(): Flow<List<AlbumSummary>>
 
     @Query(
             """
