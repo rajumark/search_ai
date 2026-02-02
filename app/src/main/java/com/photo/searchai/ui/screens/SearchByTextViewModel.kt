@@ -4,7 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.photo.searchai.core.data.repository.MediaRepository
-import com.photo.searchai.core.database.entity.ImageEntity
+import com.photo.searchai.core.database.entity.SearchResultWithOcr
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -13,12 +13,14 @@ import kotlinx.coroutines.flow.*
 
 data class SearchUiState(
         val query: String = "",
-        val results: List<ImageEntity> = emptyList(),
+        val results: List<SearchResultWithOcr> = emptyList(),
+        val resultsCount: Int = 0,
+        val suggestedChips: List<String> = emptyList(),
         val isSearching: Boolean = false,
         val isActive: Boolean = false
 )
 
-@OptIn(FlowPreview::class)
+@OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class SearchByTextViewModel
 @Inject
@@ -40,15 +42,35 @@ constructor(
                 .debounce(300)
                 .flatMapLatest { query ->
                     if (query.isBlank()) {
-                        mediaRepository.getAllImages()
+                        // When query is empty, show recent searches as chips
+                        mediaRepository.getRecentSearches().map { recent ->
+                            _uiState.update {
+                                it.copy(suggestedChips = recent, results = emptyList())
+                            }
+                            emptyList<SearchResultWithOcr>()
+                        }
                     } else {
-                        _uiState.update { it.copy(isSearching = true) }
-                        mediaRepository.searchImages(query)
+                        // Perform search and fetch suggestions
+                        flow {
+                            _uiState.update { it.copy(isSearching = true) }
+
+                            // Save to recent searches
+                            mediaRepository.saveRecentSearch(query)
+
+                            // Fetch suggestions in background
+                            val suggestions = mediaRepository.getSuggestions(query)
+                            _uiState.update { it.copy(suggestedChips = suggestions) }
+
+                            // Emit search results
+                            emitAll(mediaRepository.searchImages(query))
+                        }
                     }
                 }
                 .flowOn(Dispatchers.IO)
                 .onEach { results ->
-                    _uiState.update { it.copy(results = results, isSearching = false) }
+                    _uiState.update {
+                        it.copy(results = results, resultsCount = results.size, isSearching = false)
+                    }
                 }
                 .launchIn(viewModelScope)
     }
@@ -56,6 +78,12 @@ constructor(
     fun onQueryChange(newQuery: String) {
         _uiState.update { it.copy(query = newQuery) }
         savedStateHandle[QUERY_KEY] = newQuery
+    }
+
+    fun onChipClick(chipText: String) {
+        val currentQuery = _uiState.value.query.trim()
+        val newQuery = if (currentQuery.isEmpty()) chipText else "$currentQuery $chipText"
+        onQueryChange(newQuery)
     }
 
     fun onActiveChange(isActive: Boolean) {

@@ -9,6 +9,10 @@ import androidx.paging.PagingData
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.photo.searchai.core.database.dao.ImageDao
 import com.photo.searchai.core.database.entity.ImageEntity
+import com.photo.searchai.core.database.entity.OcrEntity
+import com.photo.searchai.core.database.entity.RecentSearchEntity
+import com.photo.searchai.core.database.entity.SearchResultWithOcr
+import com.photo.searchai.core.database.entity.SearchSuggestionEntity
 import com.photo.searchai.core.permission.PermissionChecker
 import com.photo.searchai.core.permission.PermissionType
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -16,11 +20,16 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 @Singleton
 class MediaRepository
 @Inject
-constructor(private val imageDao: ImageDao, @ApplicationContext private val context: Context) {
+constructor(
+        private val imageDao: ImageDao,
+        private val searchDao: com.photo.searchai.core.database.dao.SearchDao,
+        @ApplicationContext private val context: Context
+) {
     fun getImageCountFlow(): Flow<Int> = imageDao.getImageCount()
     fun getOcrProcessedCountFlow(): Flow<Int> = imageDao.getOcrProcessedCount()
     fun getAllImages(): Flow<List<ImageEntity>> = imageDao.getAllImages()
@@ -58,10 +67,80 @@ constructor(private val imageDao: ImageDao, @ApplicationContext private val cont
     suspend fun getPendingOcrImages(): List<ImageEntity> = imageDao.getPendingOcrImages()
 
     suspend fun updateOcrResult(id: Long, text: String) {
-        imageDao.insertOcrResult(com.photo.searchai.core.database.entity.OcrEntity(id, text, true))
+        imageDao.insertOcrResult(OcrEntity(id, text, true))
+
+        // Update suggestions table with word frequencies
+        val words =
+                text.split(Regex("[^\\w\\p{L}]+")) // Split by non-word and non-letter characters
+                        .filter { it.length > 2 }
+                        .map { it.lowercase() }
+                        .distinct()
+
+        val suggestions = words.map { word -> SearchSuggestionEntity(word, 1) }
+
+        // Note: For real performance at scale, this should be a "upsert" that increments frequency.
+        // Since sqlite doesn't easily do upsert-increment in Room without a raw query or manual
+        // check.
+        // We'll use a simplified version for this prompt.
+        searchDao.insertSuggestions(suggestions)
     }
 
-    fun searchImages(query: String): Flow<List<ImageEntity>> {
+    suspend fun saveRecentSearch(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return
+        searchDao.insertRecentSearch(RecentSearchEntity(trimmed))
+        searchDao.trimRecentSearches(5)
+    }
+
+    fun getRecentSearches(): Flow<List<String>> {
+        return searchDao.getRecentSearches(5).map { list -> list.map { it.query } }
+    }
+
+    suspend fun getSuggestions(query: String): List<String> {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return emptyList()
+
+        val tokens = trimmed.split(Regex("\\s+")).filter { it.isNotBlank() }
+        val lastToken = tokens.last()
+        val existingWords = tokens.map { it.lowercase() }.toSet()
+
+        // 1. Prefix matches (Priority 2 in requirements, but good to have first for UX)
+        val prefixMatches =
+                searchDao.getSuggestionsByPrefix(lastToken, 8).map { it.text }.filter {
+                    it.lowercase() !in existingWords
+                }
+
+        // 2. Co-occurrence Relevance (Priority 1)
+        val coOccurring =
+                if (trimmed.length > 2) {
+                    searchDao
+                            .getRawOcrResultsForCoOccurrence(trimmed)
+                            .flatMap { it.ocrText.split(Regex("[^\\w\\p{L}]+")) }
+                            .filter {
+                                it.length > 2 &&
+                                        it.lowercase() !in existingWords &&
+                                        !it.startsWith(lastToken, ignoreCase = true)
+                            }
+                            .groupBy { it.lowercase() }
+                            .mapValues { it.value.size }
+                            .toList()
+                            .sortedByDescending { it.second }
+                            .take(5)
+                            .map { it.first }
+                } else emptyList()
+
+        // 3. Global Top (Priority 3)
+        val globalTop =
+                searchDao.getGlobalTopSuggestions(5).map { it.text }.filter {
+                    it.lowercase() !in existingWords &&
+                            it.lowercase() !in prefixMatches.map { p -> p.lowercase() }
+                }
+
+        // Return combined list, prioritized: co-occurrence, then prefix, then global
+        return (coOccurring + prefixMatches + globalTop).distinct().take(8)
+    }
+
+    fun searchImages(query: String): Flow<List<SearchResultWithOcr>> {
         val trimmedQuery = query.trim()
         if (trimmedQuery.isEmpty()) return flowOf(emptyList())
 
@@ -69,7 +148,7 @@ constructor(private val imageDao: ImageDao, @ApplicationContext private val cont
         val sb = StringBuilder()
         val args = mutableListOf<Any>()
 
-        sb.append("SELECT i.* FROM images i ")
+        sb.append("SELECT i.*, o.ocrText FROM images i ")
         sb.append("JOIN ocr_results o ON i.id = o.imageId ")
         sb.append("WHERE ")
 

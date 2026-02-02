@@ -45,5 +45,7 @@ interface ImageDao {
     @Query("DELETE FROM images") suspend fun deleteAll()
 
     @RawQuery(observedEntities = [ImageEntity::class, OcrEntity::class])
-    fun searchImagesRaw(query: SupportSQLiteQuery): Flow<List<ImageEntity>>
+    fun searchImagesRaw(
+            query: SupportSQLiteQuery
+    ): Flow<List<com.photo.searchai.core.database.entity.SearchResultWithOcr>>
 }

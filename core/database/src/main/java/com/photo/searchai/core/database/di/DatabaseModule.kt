@@ -27,4 +27,9 @@ object DatabaseModule {
     fun provideImageDao(database: AppDatabase): ImageDao {
         return database.imageDao()
     }
+
+    @Provides
+    fun provideSearchDao(database: AppDatabase): com.photo.searchai.core.database.dao.SearchDao {
+        return database.searchDao()
+    }
 }

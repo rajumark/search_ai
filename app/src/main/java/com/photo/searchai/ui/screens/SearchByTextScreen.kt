@@ -1,7 +1,10 @@
 package com.photo.searchai.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -14,7 +17,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.photo.searchai.ui.components.SearchResults
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SearchByTextScreen(
         onNavigateBack: () -> Unit,
@@ -54,10 +57,53 @@ fun SearchByTextScreen(
                             }
                         }
                     }
-            ) { SearchResults(results = uiState.results) }
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    if (uiState.suggestedChips.isNotEmpty()) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                    text =
+                                            if (uiState.query.isEmpty()) "Recent searches"
+                                            else "Suggestions",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                uiState.suggestedChips.forEach { chipText ->
+                                    SuggestionChip(
+                                            onClick = { viewModel.onChipClick(chipText) },
+                                            label = { Text(chipText) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (uiState.query.isNotEmpty()) {
+                        Text(
+                                text = "${uiState.resultsCount} matches",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+
+                    SearchResults(results = uiState.results, query = uiState.query)
+                }
+            }
 
             if (!uiState.isActive) {
-                SearchResults(results = uiState.results)
+                Column(modifier = Modifier.fillMaxSize()) {
+                    if (uiState.query.isNotEmpty()) {
+                        Text(
+                                text = "${uiState.resultsCount} matches",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                    SearchResults(results = uiState.results, query = uiState.query)
+                }
             }
         }
     }
