@@ -24,45 +24,51 @@ import com.photo.searchai.core.database.entity.ImageEntity
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupingByTextScreen(
-        onNavigateBack: () -> Unit,
-        onGroupClick: (String) -> Unit, // Pass query string
-        viewModel: GroupingViewModel = hiltViewModel()
+    onNavigateBack: () -> Unit,
+    onGroupClick: (String) -> Unit,
+    viewModel: GroupingViewModel = hiltViewModel()
 ) {
     val groups by viewModel.groups.collectAsStateWithLifecycle()
 
     Scaffold(
-            topBar = {
-                TopAppBar(
-                        title = { Text("Smart Collections") },
-                        navigationIcon = {
-                            IconButton(onClick = onNavigateBack) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                            }
-                        }
-                )
-            }
+        topBar = {
+            TopAppBar(
+                title = { Text("Smart Collections") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
     ) { paddingValues ->
         if (groups.isEmpty()) {
             Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = androidx.compose.ui.Alignment.Center
             ) {
                 Text(
-                        "No collections found yet. Try adding images with text.",
-                        style = MaterialTheme.typography.bodyLarge
+                    text = "No collections found yet",
+                    style = MaterialTheme.typography.bodyLarge
                 )
             }
         } else {
             LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
             ) {
                 items(groups) { uiModel ->
-                    GroupCard(
-                            group = uiModel.group,
-                            previews = uiModel.previews,
-                            onClick = { onGroupClick(uiModel.group.groupKey.replace(" • ", " ")) }
+                    GroupRow(
+                        group = uiModel.group,
+                        previews = uiModel.previews,
+                        onClick = {
+                            onGroupClick(
+                                uiModel.group.groupKey.replace(" • ", " ")
+                            )
+                        }
                     )
                 }
             }
@@ -71,38 +77,50 @@ fun GroupingByTextScreen(
 }
 
 @Composable
-fun GroupCard(group: GroupEntity, previews: List<ImageEntity>, onClick: () -> Unit) {
-    Card(
-            modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+private fun GroupRow(
+    group: GroupEntity,
+    previews: List<ImageEntity>,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 18.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Title and Subtitle
-            Text(
-                    text = group.groupKey,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                    text = "${group.imageCount} items",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Text(
+            text = group.groupKey,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
 
-            Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
-            // Preview Image Grid (Row of up to 4 images)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                previews.take(4).forEach { image ->
-                    AsyncImage(
-                            model = image.uri,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(70.dp).clip(RoundedCornerShape(8.dp))
-                    )
-                }
+        Text(
+            text = "${group.imageCount} images",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            previews.take(3).forEach { image ->
+                AsyncImage(
+                    model = image.uri,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                )
             }
         }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        Divider(thickness = 1.dp)
     }
 }
