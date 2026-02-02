@@ -2,6 +2,7 @@ package com.photo.searchai.core.ocr
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.label.ImageLabeling
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
@@ -23,7 +24,12 @@ class LabelingProcessor @Inject constructor(@ApplicationContext private val cont
             val labels = labeler.process(image).await()
             labels.map { LabelResult(it.text, it.confidence, it.index) }
         } catch (e: Exception) {
+            Log.e(TAG, "Image labeling failed for uri=$uriString", e)
             emptyList()
         }
+    }
+
+    companion object {
+        private const val TAG = "LabelingProcessor"
     }
 }
