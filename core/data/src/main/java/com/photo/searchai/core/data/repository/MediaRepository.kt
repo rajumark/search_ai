@@ -212,16 +212,26 @@ constructor(
         val args = mutableListOf<Any>()
 
         sb.append("SELECT i.*, o.ocrText FROM images i ")
-        sb.append("JOIN ocr_results o ON i.id = o.imageId ")
+        sb.append("LEFT JOIN ocr_results o ON i.id = o.imageId ")
         sb.append("WHERE ")
 
         val conditions = mutableListOf<String>()
-        // Base condition for any match
+        
+        // OCR text search conditions
         conditions.add("o.ocrText LIKE ?")
         args.add("%$trimmedQuery%")
 
         for (token in tokens) {
             conditions.add("o.ocrText LIKE ?")
+            args.add("%$token%")
+        }
+        
+        // Filename fallback search conditions
+        conditions.add("i.name LIKE ?")
+        args.add("%$trimmedQuery%")
+        
+        for (token in tokens) {
+            conditions.add("i.name LIKE ?")
             args.add("%$token%")
         }
 
@@ -236,11 +246,11 @@ constructor(
 
         sb.append(" ORDER BY ")
 
-        // Priority 1: Exact phrase match
-        sb.append("CASE WHEN o.ocrText LIKE ? THEN 1 ELSE 0 END DESC, ")
+        // Priority 1: Exact phrase match in OCR text (prioritize OCR results)
+        sb.append("CASE WHEN o.ocrText LIKE ? THEN 1 ELSE 2 END ASC, ")
         args.add("%$trimmedQuery%")
 
-        // Priority 2: All words match
+        // Priority 2: All words match in OCR text
         if (tokens.size > 1) {
             sb.append("(")
             val tokenChecks =
@@ -251,6 +261,10 @@ constructor(
             sb.append(tokenChecks.joinToString(" + "))
             sb.append(" = ${tokens.size}) DESC, ")
         }
+
+        // Priority 3: Exact phrase match in filename
+        sb.append("CASE WHEN i.name LIKE ? THEN 1 ELSE 0 END DESC, ")
+        args.add("%$trimmedQuery%")
 
         // Final tie-breaker: Date added
         sb.append("i.dateAdded DESC")
