@@ -28,10 +28,12 @@ class MediaRepository
 constructor(
         private val imageDao: ImageDao,
         private val searchDao: com.photo.searchai.core.database.dao.SearchDao,
+        private val imageLabelDao: com.photo.searchai.core.database.dao.ImageLabelDao,
         @ApplicationContext private val context: Context
 ) {
     fun getImageCountFlow(): Flow<Int> = imageDao.getImageCount()
     fun getOcrProcessedCountFlow(): Flow<Int> = imageDao.getOcrProcessedCount()
+    fun getLabelingProcessedCountFlow(): Flow<Int> = imageLabelDao.getLabeledImageCount()
     fun getAllImages(): Flow<List<ImageEntity>> = imageDao.getAllImages()
 
     fun getAllImagesPager(): Flow<PagingData<ImageEntity>> {
@@ -65,6 +67,17 @@ constructor(
     }
 
     suspend fun getPendingOcrImages(): List<ImageEntity> = imageDao.getPendingOcrImages()
+
+    suspend fun getPendingLabelingImages(): List<ImageEntity> =
+            imageLabelDao.getPendingLabelingImages()
+
+    suspend fun saveLabelingResults(
+            labels: List<com.photo.searchai.core.database.entity.ImageLabelEntity>
+    ) {
+        if (labels.isNotEmpty()) {
+            imageLabelDao.insertLabels(labels)
+        }
+    }
 
     suspend fun updateOcrResult(id: Long, text: String) {
         imageDao.insertOcrResult(OcrEntity(id, text, true))

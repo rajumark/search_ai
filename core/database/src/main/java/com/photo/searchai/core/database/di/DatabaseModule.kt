@@ -37,4 +37,11 @@ object DatabaseModule {
     fun provideGroupDao(database: AppDatabase): com.photo.searchai.core.database.dao.GroupDao {
         return database.groupDao()
     }
+
+    @Provides
+    fun provideImageLabelDao(
+            database: AppDatabase
+    ): com.photo.searchai.core.database.dao.ImageLabelDao {
+        return database.imageLabelDao()
+    }
 }

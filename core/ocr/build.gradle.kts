@@ -40,6 +40,7 @@ ksp {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.mlkit.text.recognition)
+    implementation(libs.mlkit.image.labeling)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
