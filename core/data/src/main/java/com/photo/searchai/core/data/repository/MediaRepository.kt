@@ -3,6 +3,9 @@ package com.photo.searchai.core.data.repository
 import android.content.ContentUris
 import android.content.Context
 import android.provider.MediaStore
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.photo.searchai.core.database.dao.ImageDao
 import com.photo.searchai.core.database.entity.ImageEntity
 import com.photo.searchai.core.permission.PermissionChecker
@@ -18,6 +21,14 @@ class MediaRepository
 constructor(private val imageDao: ImageDao, @ApplicationContext private val context: Context) {
     fun getImageCountFlow(): Flow<Int> = imageDao.getImageCount()
     fun getOcrProcessedCountFlow(): Flow<Int> = imageDao.getOcrProcessedCount()
+
+    fun getAllImagesPager(): Flow<PagingData<ImageEntity>> {
+        return Pager(
+                        config = PagingConfig(pageSize = 60, enablePlaceholders = true),
+                        pagingSourceFactory = { imageDao.getAllImagesPagingSource() }
+                )
+                .flow
+    }
 
     suspend fun syncImages() {
         if (!PermissionChecker.hasPermission(context, PermissionType.ALL_FILES)) {

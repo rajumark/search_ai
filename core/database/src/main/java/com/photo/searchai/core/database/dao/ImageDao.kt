@@ -1,5 +1,6 @@
 package com.photo.searchai.core.database.dao
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -10,6 +11,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ImageDao {
     @Query("SELECT * FROM images") fun getAllImages(): Flow<List<ImageEntity>>
+
+    @Query("SELECT * FROM images ORDER BY dateAdded DESC")
+    fun getAllImagesPagingSource(): PagingSource<Int, ImageEntity>
 
     @Query("SELECT COUNT(*) FROM images") fun getImageCount(): Flow<Int>
 

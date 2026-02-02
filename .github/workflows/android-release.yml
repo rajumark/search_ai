@@ -1,0 +1,75 @@
+name: Android Release Build
+
+on:
+  push:
+    branches:
+      - 'main'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - id: check
+        run: |
+          if echo "${{ github.event.head_commit.message }}" | grep -q "#go"; then
+            echo "run=true" >> $GITHUB_OUTPUT
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.run == 'true'
+
+      - id: version
+        if: steps.check.outputs.run == 'true'
+        run: |
+          echo "code=$(date -u +'%y%m%d%H%M')" >> $GITHUB_OUTPUT
+          echo "name=$(date -u +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
+
+      - uses: actions/setup-java@v4
+        if: steps.check.outputs.run == 'true'
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.check.outputs.run == 'true'
+
+      - if: steps.check.outputs.run == 'true'
+        env:
+          CI_VERSION_CODE: ${{ steps.version.outputs.code }}
+          CI_VERSION_NAME: ${{ steps.version.outputs.name }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease
+
+      - id: apk
+        if: steps.check.outputs.run == 'true'
+        run: |
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          NAME="PhotoSearchAI-${{ steps.version.outputs.name }}.apk"
+          mv "$APK" "app/build/outputs/apk/release/$NAME"
+          echo "path=app/build/outputs/apk/release/$NAME" >> $GITHUB_OUTPUT
+
+      - uses: softprops/action-gh-release@v2
+        if: steps.check.outputs.run == 'true'
+        with:
+          tag_name: v${{ steps.version.outputs.name }}
+          name: PhotoSearchAI v${{ steps.version.outputs.name }}
+          files: ${{ steps.apk.outputs.path }}
+          body: |
+            PhotoSearchAI v${{ steps.version.outputs.name }}
+            Build: ${{ steps.version.outputs.code }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

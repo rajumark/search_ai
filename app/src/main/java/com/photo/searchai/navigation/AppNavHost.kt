@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.photo.searchai.ui.screens.HomeScreen
 import com.photo.searchai.ui.screens.PermissionScreen
+import com.photo.searchai.ui.screens.SearchByTextScreen
 import com.photo.searchai.ui.screens.SplashScreen
 
 @Composable
@@ -36,6 +37,11 @@ fun AppNavHost(
                     }
             )
         }
-        composable("home") { HomeScreen() }
+        composable("home") {
+            HomeScreen(onNavigateToSearch = { navController.navigate("search_by_text") })
+        }
+        composable("search_by_text") {
+            SearchByTextScreen(onNavigateBack = { navController.popBackStack() })
+        }
     }
 }
