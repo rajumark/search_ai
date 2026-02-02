@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -60,7 +62,9 @@ fun SearchByTextScreen(
 
     Scaffold(
             topBar = {
-                Column {
+                Column(
+                        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)
+                ) {
                     if (uiState.bucketName.isNotBlank()) {
                         Text(
                                 text = uiState.bucketName,

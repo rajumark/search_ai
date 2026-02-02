@@ -4,13 +4,13 @@ on:
   push:
     branches:
       - main
-      - release/*
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    if: contains(github.event.comment.body, '#go')
 
     steps:
       - uses: actions/checkout@v4
