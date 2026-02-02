@@ -27,8 +27,8 @@ fun SearchByTextScreen(
 
     BackHandler(enabled = uiState.isActive) { viewModel.onActiveChange(false) }
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+
+        Column(modifier = Modifier.fillMaxSize() ) {
             SearchBar(
                     modifier =
                             Modifier.fillMaxWidth()
@@ -106,5 +106,5 @@ fun SearchByTextScreen(
                 }
             }
         }
-    }
+
 }
