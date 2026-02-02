@@ -20,4 +20,18 @@ class WorkScheduler @Inject constructor(private val workManager: WorkManager) {
 
         workManager.enqueueUniquePeriodicWork(uniqueName, ExistingPeriodicWorkPolicy.KEEP, request)
     }
+
+    fun scheduleOneTimeWork(uniqueName: String, workerClass: Class<out ListenableWorker>) {
+        val request =
+                OneTimeWorkRequest.Builder(workerClass)
+                        .setConstraints(
+                                Constraints.Builder()
+                                        .setRequiresBatteryNotLow(true)
+                                        .setRequiresStorageNotLow(true)
+                                        .build()
+                        )
+                        .build()
+
+        workManager.enqueueUniqueWork(uniqueName, ExistingWorkPolicy.KEEP, request)
+    }
 }

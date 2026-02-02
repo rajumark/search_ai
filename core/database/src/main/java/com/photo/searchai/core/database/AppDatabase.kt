@@ -9,7 +9,7 @@ import com.photo.searchai.core.database.entity.ProcessingSnapshotEntity
 
 @Database(
         entities = [ImageEntity::class, ProcessingSnapshotEntity::class],
-        version = 1,
+        version = 3,
         exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

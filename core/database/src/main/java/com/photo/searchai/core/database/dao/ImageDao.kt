@@ -17,6 +17,22 @@ interface ImageDao {
             limit: Int
     ): List<ImageEntity>
 
+    @androidx.room.Insert(onConflict = androidx.room.OnConflictStrategy.IGNORE)
+    suspend fun insertOrIgnore(images: List<ImageEntity>)
+
+    @Query(
+            """
+        SELECT * FROM images 
+        WHERE ocrStatus = :status OR labelingStatus = :status 
+        LIMIT :limit
+    """
+    )
+    suspend fun getPendingImages(
+            status: ProcessingStatus = ProcessingStatus.PENDING,
+            limit: Int
+    ): List<ImageEntity>
+
     @Update suspend fun updateImage(image: ImageEntity)
+
     @Query("SELECT COUNT(*) FROM images") fun getTotalCount(): kotlinx.coroutines.flow.Flow<Int>
 }

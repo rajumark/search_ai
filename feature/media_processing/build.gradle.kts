@@ -7,8 +7,8 @@ plugins {
 }
 
 android {
-    namespace = "com.photo.searchai.core.work"
-    compileSdk = 34
+    namespace = "com.photo.searchai.feature.mediaprocessing"
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 26
@@ -24,16 +24,16 @@ android {
 
 dependencies {
     implementation(project(":domain"))
-    implementation(project(":core:database")) // May need DAOs? Actually logic is in Repos usually, but worker uses repo.
+    implementation(project(":core:database"))
+    implementation(project(":core:work"))
+    implementation(project(":feature:ocr"))
+    implementation(project(":feature:labeling"))
     implementation(project(":core:permissions"))
-    
-    // WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-    implementation("androidx.hilt:hilt-work:1.2.0")
-    ksp("androidx.hilt:hilt-compiler:1.2.0")
+
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
-    
-    implementation("androidx.core:core-ktx:1.12.0") // NotificationCompat
 }

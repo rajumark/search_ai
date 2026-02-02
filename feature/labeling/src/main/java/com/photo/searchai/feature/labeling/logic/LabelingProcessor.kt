@@ -1,0 +1,25 @@
+package com.photo.searchai.feature.labeling.logic
+
+import android.content.Context
+import android.net.Uri
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.label.ImageLabeling
+import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import kotlinx.coroutines.tasks.await
+
+class LabelingProcessor @Inject constructor(@ApplicationContext private val context: Context) {
+    private val labeler = ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS)
+
+    suspend fun process(uri: Uri): List<String> {
+        return try {
+            val image = InputImage.fromFilePath(context, uri)
+            val labels = labeler.process(image).await()
+            labels.map { it.text }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+}

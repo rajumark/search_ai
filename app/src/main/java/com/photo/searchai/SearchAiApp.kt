@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.photo.searchai.core.work.WorkScheduler
-import com.photo.searchai.feature.ocr.OcrWorker
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -23,7 +22,15 @@ class SearchAiApp : Application(), Configuration.Provider {
     }
 
     private fun scheduleBackgroundWork() {
-        workScheduler.schedulePeriodicWork("OCR_WORK", OcrWorker::class.java)
-        // workScheduler.schedulePeriodicWork("LABEL_WORK", LabelWorker::class.java)
+        workScheduler.scheduleOneTimeWork(
+                "MEDIA_PROCESSING_ONETIME",
+                com.photo.searchai.feature.mediaprocessing.domain.MediaProcessingWorker::class.java
+        )
+        workScheduler.schedulePeriodicWork(
+                "MEDIA_PROCESSING_PERIODIC",
+                com.photo.searchai.feature.mediaprocessing.domain
+                                .PeriodicMediaProcessingWorker::class
+                        .java
+        )
     }
 }

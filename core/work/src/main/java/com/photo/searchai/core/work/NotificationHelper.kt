@@ -35,7 +35,15 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
                         .setProgress(total, processed, false)
                         .build()
 
-        return ForegroundInfo(id, notification)
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            ForegroundInfo(
+                    id,
+                    notification,
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            )
+        } else {
+            ForegroundInfo(id, notification)
+        }
     }
 
     private fun createChannel() {

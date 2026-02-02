@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
+import com.photo.searchai.core.permissions.logic.PermissionManager
 import com.photo.searchai.domain.model.FeatureType
 import com.photo.searchai.domain.repository.SnapshotRepository
 
@@ -11,17 +12,28 @@ abstract class BaseFeatureWorker(
         context: Context,
         params: WorkerParameters,
         private val snapshotRepository: SnapshotRepository,
-        private val notificationHelper: NotificationHelper
+        private val notificationHelper: NotificationHelper,
+        private val permissionManager: PermissionManager
 ) : CoroutineWorker(context, params) {
 
     abstract val featureType: FeatureType
 
     override suspend fun doWork(): Result {
+        // Check storage permissions first
+        if (!permissionManager.hasStoragePermission(applicationContext)) {
+            // Retry later if permissions are missing
+            return Result.retry()
+        }
+
         val snapshot =
                 snapshotRepository.getLatestSnapshotSync(featureType) ?: return Result.success()
 
+        val hasNotificationPermission = permissionManager.isNotificationGranted(applicationContext)
+
         // Initial notification
-        setForeground(createForegroundInfo(snapshot.processedCount, snapshot.totalPending))
+        if (hasNotificationPermission) {
+            setForeground(createForegroundInfo(snapshot.processedCount, snapshot.totalPending))
+        }
 
         var currentProcessed = snapshot.processedCount
 
@@ -29,7 +41,9 @@ abstract class BaseFeatureWorker(
             processItems { processedDelta ->
                 currentProcessed += processedDelta
                 snapshotRepository.updateSnapshotProgress(featureType, currentProcessed)
-                setForeground(createForegroundInfo(currentProcessed, snapshot.totalPending))
+                if (hasNotificationPermission) {
+                    setForeground(createForegroundInfo(currentProcessed, snapshot.totalPending))
+                }
             }
         } catch (e: Exception) {
             return Result.retry()

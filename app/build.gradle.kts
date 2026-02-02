@@ -203,6 +203,7 @@ dependencies {
     implementation(project(":feature:home"))
     implementation(project(":feature:labeling"))
     implementation(project(":feature:media"))
+    implementation(project(":feature:media_processing"))
     
     // Domain
     implementation(project(":domain"))

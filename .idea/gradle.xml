@@ -20,6 +20,7 @@
             <option value="$PROJECT_DIR$/feature/home" />
             <option value="$PROJECT_DIR$/feature/labeling" />
             <option value="$PROJECT_DIR$/feature/media" />
+            <option value="$PROJECT_DIR$/feature/media_processing" />
             <option value="$PROJECT_DIR$/feature/ocr" />
           </set>
         </option>
