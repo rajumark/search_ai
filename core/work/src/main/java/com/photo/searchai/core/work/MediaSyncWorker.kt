@@ -6,6 +6,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import com.photo.searchai.core.data.repository.MediaRepository
+import com.photo.searchai.core.ocr.LabelingProcessor
 import com.photo.searchai.core.ocr.OcrProcessor
 import com.photo.searchai.core.permission.PermissionChecker
 import com.photo.searchai.core.permission.PermissionType
@@ -21,7 +22,8 @@ constructor(
         @Assisted workerParams: WorkerParameters,
         private val repository: MediaRepository,
         private val groupRepository: com.photo.searchai.core.data.repository.GroupRepository,
-        private val ocrProcessor: OcrProcessor
+        private val ocrProcessor: OcrProcessor,
+        private val labelingProcessor: LabelingProcessor
 ) : CoroutineWorker(appContext, workerParams) {
 
     private val notificationHelper = SyncNotificationHelper(appContext)
@@ -35,6 +37,7 @@ constructor(
 
             syncMedia()
             processPendingOcr()
+            processPendingLabeling()
             Result.success()
         } catch (e: Exception) {
             if (runAttemptCount < 3) Result.retry() else Result.failure()
@@ -99,7 +102,35 @@ constructor(
         }
     }
 
+    private suspend fun processPendingLabeling() {
+        val pendingImages = repository.getPendingLabelingImages()
+
+        if (pendingImages.isEmpty()) return
+
+        pendingImages.forEach { image ->
+            if (isStopped) return@forEach
+
+            try {
+                val labels = labelingProcessor.processImage(image.uri)
+                val entities =
+                        labels.map { label ->
+                            com.photo.searchai.core.database.entity.ImageLabelEntity(
+                                    imageId = image.id,
+                                    labelId = label.index.toString(),
+                                    labelText = label.text,
+                                    confidence = label.confidence,
+                                    modelVersion = MODEL_VERSION
+                            )
+                        }
+                repository.saveLabelingResults(entities)
+            } catch (e: Exception) {
+                // Individual image processing failure shouldn't stop the whole sync
+            }
+        }
+    }
+
     companion object {
         private val jobLock = Mutex()
+        private const val MODEL_VERSION = "mlkit-image-labeling-17.0.7"
     }
 }

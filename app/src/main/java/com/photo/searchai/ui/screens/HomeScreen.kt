@@ -111,6 +111,7 @@ fun HomeScreen(
 private fun HomeTabContent(viewModel: HomeViewModel) {
         val imageCount by viewModel.imageCount.collectAsState()
         val ocrCount by viewModel.ocrCount.collectAsState()
+        val labelingCount by viewModel.labelingCount.collectAsState()
 
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -131,6 +132,12 @@ private fun HomeTabContent(viewModel: HomeViewModel) {
                         Spacer(modifier = Modifier.padding(16.dp))
                         Text(
                                 text = "OCR Indexed: $ocrCount",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.tertiary
+                        )
+                        Spacer(modifier = Modifier.padding(8.dp))
+                        Text(
+                                text = "Labels Indexed: $labelingCount",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.tertiary
                         )

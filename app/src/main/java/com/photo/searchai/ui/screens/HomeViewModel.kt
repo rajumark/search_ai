@@ -36,6 +36,15 @@ constructor(
                             initialValue = 0
                     )
 
+    val labelingCount: StateFlow<Int> =
+            mediaRepository
+                    .getLabelingProcessedCountFlow()
+                    .stateIn(
+                            scope = viewModelScope,
+                            started = SharingStarted.WhileSubscribed(5000),
+                            initialValue = 0
+                    )
+
     init {
         // Run one-time sync and schedule periodic sync when ViewModel is initialized
         mediaWorkScheduler.runOneTimeSync()
