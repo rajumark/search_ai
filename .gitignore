@@ -14,3 +14,6 @@
 .cxx
 local.properties
 core/permission/build
+core/database/build
+core/data/build
+core/work/build

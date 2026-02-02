@@ -22,4 +22,9 @@ dependencyResolutionManagement {
 rootProject.name = "Photo Search AI"
 include(":app")
 include(":core:permission")
+include(":core:database")
+include(":core:data")
+include(":core:work")
+include(":feature:home")
+include(":feature:media")
 

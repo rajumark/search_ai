@@ -1,10 +1,11 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
 }
 
 android {
-    namespace = "com.photo.searchai.core.permission"
+    namespace = "com.photo.searchai.core.data"
     compileSdk = 35
 
     defaultConfig {
@@ -22,6 +23,14 @@ kotlin {
     jvmToolchain(21)
 }
 
+ksp {
+    arg("ksp.jvm.target", "21")
+}
+
 dependencies {
+    implementation(project(":core:database"))
+    implementation(project(":core:permission"))
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
     implementation(libs.androidx.core.ktx)
 }
